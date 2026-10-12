@@ -1,0 +1,44 @@
+{
+  "name": "causora",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Causality-aware distributed debugging: propagate causality, measure what is lost when it is not.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning scripts/stack.ts",
+    "dev": "node --disable-warning=ExperimentalWarning scripts/stack.ts --web",
+    "build:web": "vite build --config web/vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/unit/*.test.ts\"",
+    "test:coverage": "node --disable-warning=ExperimentalWarning --experimental-test-coverage --test \"test/unit/*.test.ts\"",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 --test-timeout=120000 \"test/e2e/*.test.ts\"",
+    "seed": "node --disable-warning=ExperimentalWarning scripts/cli.ts seed",
+    "demo:happy-path": "node --disable-warning=ExperimentalWarning scripts/cli.ts happy-path",
+    "demo:primary-failure": "node --disable-warning=ExperimentalWarning scripts/cli.ts primary-failure",
+    "eval": "node --disable-warning=ExperimentalWarning scripts/cli.ts eval",
+    "bench": "node --disable-warning=ExperimentalWarning scripts/bench.ts",
+    "check:docs": "node scripts/check-docs.mjs"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/static": "^8.0.4",
+    "fastify": "^5.2.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.52",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@xyflow/react": "^12.4.2",
+    "dagre": "^0.8.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  }
+}
