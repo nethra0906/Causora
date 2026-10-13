@@ -16,7 +16,7 @@ function Cell({ v }: { v: number }) {
 export function Evaluation({ health }: { health: Health | undefined }) {
   const latest = usePoll(api.evaluation, 3000);
   const job = usePoll(api.job, 1000);
-  const [n, setN] = useState(8);
+  const [n, setN] = useState(10);
   const [err, setErr] = useState<string | null>(null);
   const running = job.data?.status === 'RUNNING';
   const doc: EvaluationDoc | null | undefined = latest.data?.doc;
@@ -45,7 +45,7 @@ export function Evaluation({ health }: { health: Health | undefined }) {
         <label>Runs per scenario <input type="number" min={1} max={20} value={n} onChange={(e) => setN(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /></label>
         <button className="primary" onClick={run} disabled={running || !baselineReady}>Run evaluation</button>
         {!baselineReady && <span className="muted small">Seed a baseline on the Failures page first.</span>}
-        <span className="muted small">{4 * n} scored runs · takes roughly {Math.round(10 + 4 * n)} s</span>
+        <span className="muted small">{4 * n} headline runs + {2 * n} held-out · takes roughly {Math.round(20 + 5 * n)} s</span>
       </div>
 
       {!doc && <div className="empty"><strong>No evaluation has been run yet.</strong><p>Run one above. Every number on this page is produced by a real run; nothing is typed in by hand.</p></div>}
@@ -103,12 +103,69 @@ export function Evaluation({ health }: { health: Health | undefined }) {
             </div>
           </section>
 
+          {doc.heuristic_ablation && doc.heuristic_ablation.length > 0 && (
+            <section aria-labelledby="heur">
+              <h2 id="heur">What the two fitted heuristics buy</h2>
+              <p className="muted small">
+                Self-time latency and callee error attribution were added <strong>after</strong> S2/S3 failed. Same stored events, each heuristic switched off,
+                over every failure run (headline + held-out). This shows what they <em>buy</em>; it does <strong>not</strong> show they generalise.
+              </p>
+              <div className="scroll">
+                <table className="table eval">
+                  <thead>
+                    <tr>
+                      <th>Variant</th><th>Hit@1 (all {doc.heuristic_ablation[0]!.runs})</th><th>MRR</th>
+                      {Object.keys(doc.heuristic_ablation[0]!.by_scenario).map((s) => <th key={s}>{s}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doc.heuristic_ablation.map((r) => (
+                      <tr key={r.variant} className={r.variant === 'full' ? 'baseline-row' : ''}>
+                        <th scope="row">{r.title}</th>
+                        <Cell v={r.hit1} />
+                        <td className="num">{r.mrr.toFixed(2)}</td>
+                        {Object.keys(r.by_scenario).map((s) => <Cell key={s} v={r.by_scenario[s]!.hit1} />)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           <section aria-labelledby="ctl">
             <h2 id="ctl">Control</h2>
             {doc.controls.map((c) => (
               <p key={c.scenario}><span className="mono">{c.scenario}</span>: {c.confirmed}/{c.runs} orders confirmed, <strong>{c.duplicate_edges}</strong> DUPLICATE_OF edges. Same fault as S1 with the corrected idempotency guard — the failure and exactly that one edge disappear.</p>
             ))}
           </section>
+
+          {doc.held_out && doc.held_out.length > 0 && (
+            <section aria-labelledby="held">
+              <h2 id="held">Held-out scenarios</h2>
+              <p className="muted small">
+                Written with predictions <strong>before</strong> they were implemented, with the analyser frozen (see <span className="mono">docs/experiments/held-out.md</span>).
+                Not part of the table above. The graded verdicts are in the generated <span className="mono">docs/experiments/results.md</span>.
+              </p>
+              <div className="scroll">
+                <table className="table eval">
+                  <thead><tr><th>Scenario</th><th>Reproduced</th><th>Hit@1 (full contract)</th><th>Hit@1 (tracing only)</th><th>Rank-1 candidate(s)</th><th>Completeness</th></tr></thead>
+                  <tbody>
+                    {doc.held_out.map((h) => (
+                      <tr key={h.scenario}>
+                        <th scope="row"><div>{h.title}</div><div className="mono small muted">{h.scenario}</div></th>
+                        <td className="num">{h.reproduced}/{Object.values(h.observed_outcomes).reduce((a, b) => a + b, 0)}</td>
+                        <Cell v={h.by_rule_set['default']?.hit1 ?? 0} />
+                        <Cell v={h.by_rule_set['ablation.tracing_only.no_inference']?.hit1 ?? 0} />
+                        <td className="mono small">{Object.entries(h.default.top_candidates).map(([k, n]) => `${k} ×${n}`).join(', ') || '—'}</td>
+                        <td className="small">{Object.entries(h.default.completeness).map(([k, n]) => `${k} ×${n}`).join(', ') || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           <section className="caveats-box">
             <h2>Read this before quoting a number</h2>

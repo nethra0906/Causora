@@ -265,6 +265,10 @@ export interface AnalysisConfig {
   retryWindowMs: number;
   inferenceWindowMs: number;
   clockUncertaintyMs: number;
+  /** Heuristic H1: latency is self-time (duration minus child spans). Switched off ONLY to measure what it buys. */
+  selfTimeLatency: boolean;
+  /** Heuristic H2: a caller's error/timeout is attributed to its callee. Switched off ONLY to measure what it buys. */
+  calleeErrorAttribution: boolean;
 }
 
 export const DEFAULT_CONFIG: AnalysisConfig = {
@@ -283,6 +287,8 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   retryWindowMs: 30_000,
   inferenceWindowMs: 5_000,
   clockUncertaintyMs: 50,
+  selfTimeLatency: true,
+  calleeErrorAttribution: true,
 };
 
 // ───────────────────────────── analysis result types ─────────────────────────────
@@ -370,9 +376,18 @@ export const PORTS = { platform: PORT_BASE, order: PORT_BASE + 101, inventory: P
 export const TOPICS = { orders: 'orders.events', inventory: 'inventory.events' } as const;
 export const GROUPS = { inventoryReserver: 'inventory-reserver', orderSaga: 'order-saga' } as const;
 
-/** Deterministic id of "message M consumed by group G" — computable by anyone who knows M. */
-export function consumeEventId(messageId: string, group: string): string {
-  return `consume:${messageId}:${group}`;
+/**
+ * Deterministic id of "message M consumed by group G" — computable by anyone who knows M, which is
+ * what lets a timeout name the consumer it awaited before that consumer has run.
+ *
+ * The FIRST delivery keeps the bare id (that is the one a waiter can name). A REDELIVERY of the same
+ * message after a handler failure is a different occurrence and gets a `#<n>` suffix; before this,
+ * redeliveries shared one id and all but the first were silently discarded at ingest (held-out
+ * prediction P6, docs/experiments/held-out.md).
+ */
+export function consumeEventId(messageId: string, group: string, delivery = 1): string {
+  const base = `consume:${messageId}:${group}`;
+  return delivery > 1 ? `${base}#${delivery}` : base;
 }
 
 /**

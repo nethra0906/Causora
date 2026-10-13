@@ -87,17 +87,26 @@ test('publish() refuses to send without the causal contract', async () => {
 });
 
 test('delivery is at-least-once: a failing handler is redelivered, then dead-lettered', async () => {
-  setTelemetrySink(() => undefined);
+  const spans: WireSpan[] = [];
+  setTelemetrySink((s) => spans.push(...s));
   const bus = openBus(':memory:');
   let calls = 0;
   const sub = subscribe({ bus, topic: 't', group: 'g', operation: 'o', pollMs: 5, handler: async () => { calls++; throw new Error('boom'); } });
-  await withSpan({ name: 'r', operation: 'r', eventType: 'http.server.request', kind: 'server' }, (root) => publish({ bus, topic: 't', key: 'k', type: 'x', payload: {}, operation: 'p', causationId: root.eventId, businessOperationId: 'b', attempt: 1 }));
+  const pub = await withSpan({ name: 'r', operation: 'r', eventType: 'http.server.request', kind: 'server' }, (root) => publish({ bus, topic: 't', key: 'k', type: 'x', payload: {}, operation: 'p', causationId: root.eventId, businessOperationId: 'b', attempt: 1 }));
   await untilTrue(() => calls >= 3, 5000);
   await sleep(300);
   sub.stop();
   setTelemetrySink(null);
   assert.equal(calls, 3, 'MAX_DELIVERIES attempts, then dead');
   assert.equal((bus.db.prepare("SELECT status FROM deliveries").get() as any).status, 'dead');
+
+  // Regression for held-out defect P6: every delivery is its own event, and ONLY the first keeps the
+  // id a waiter can compute in advance. Previously all three shared one id and two were dropped at ingest.
+  const ids = spans.filter((s) => s.attributes[ATTR.eventType] === 'messaging.consume').map((s) => s.attributes[ATTR.eventId]);
+  assert.equal(ids.length, 3);
+  assert.equal(new Set(ids).size, 3, 'redeliveries must not collide on one event id');
+  assert.ok(ids.includes(`consume:${pub.messageId}:g`), 'the first delivery keeps the deterministic, awaitable id');
+  assert.ok(ids.includes(`consume:${pub.messageId}:g#2`) && ids.includes(`consume:${pub.messageId}:g#3`));
 });
 
 // ───────────────────────── normalisation ─────────────────────────

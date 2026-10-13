@@ -151,6 +151,37 @@ test('the other scenarios: each produces its failure, an asserted graph, and ran
   }
 });
 
+// Held-out scenarios (docs/experiments/held-out.md). These tests pin down MECHANICS only — that each
+// scenario reproduces and that its causal chain is wired as designed. They deliberately do NOT assert
+// the ranking or the redelivery behaviour: those are pre-registered predictions, graded by `npm run eval`.
+test('held-out S5 (handler throws): reproduces RETRY_EXHAUSTED with failing spans and provable timeouts', { timeout: 60_000 }, async () => {
+  const { runs } = await runScenario('inventory-crash', 2);
+  for (const run of runs) {
+    assert.ok(run.matchedExpectation, `expected FAILED/RETRY_EXHAUSTED, got ${run.status}/${run.reason}`);
+    const g = await json(`/api/v1/operations/${run.operationId}/graph`);
+    const nodes = new Map<string, any>(g.nodes.map((n: any) => [n.event_id, n]));
+    const failing = g.nodes.filter((n: any) => n.operation === 'inventory.reserve' && n.status === 'ERROR');
+    assert.ok(failing.length >= 1, 'the injected exception ends the consume span in ERROR');
+    assert.ok(failing.every((n: any) => n.error_type === 'EXCEPTION'));
+    assert.ok(has(g.edges, 'inventory.reserve', 'order.inventory_wait.timeout', 'TIMED_OUT_WAITING_FOR', nodes), 'each timeout still names the consumer it awaited');
+    assert.equal(g.edges.filter((e: any) => e.evidence_class === 'inferred').length, 0);
+  }
+});
+
+test('held-out S6 (deliberate rejection): reproduces INSUFFICIENT_STOCK with a fully proven chain and healthy upstream spans', { timeout: 60_000 }, async () => {
+  const { runs } = await runScenario('inventory-reject', 2);
+  for (const run of runs) {
+    assert.ok(run.matchedExpectation, `expected FAILED/INSUFFICIENT_STOCK, got ${run.status}/${run.reason}`);
+    const g = await json(`/api/v1/operations/${run.operationId}/graph`);
+    const nodes = new Map<string, any>(g.nodes.map((n: any) => [n.event_id, n]));
+    assert.ok(has(g.edges, 'inventory.publish_rejected', 'order.on_inventory_reply', 'TRIGGERED', nodes), 'the rejection crosses the broker as a proven edge');
+    assert.ok(has(g.edges, 'order.on_inventory_reply', 'order.failed', 'PARENT_OF', nodes));
+    assert.equal(g.edges.filter((e: any) => e.evidence_class === 'inferred').length, 0);
+    const reserve = g.nodes.filter((n: any) => n.operation === 'inventory.reserve');
+    assert.ok(reserve.length >= 1 && reserve.every((n: any) => n.status === 'OK'), 'the rejecting handler looks perfectly healthy — that is the point of the scenario');
+  }
+});
+
 test('faults are cleared after every run: a healthy order afterwards confirms', { timeout: 30_000 }, async () => {
   const res = await fetch(`http://127.0.0.1:${BASE + 101}/orders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   const { orderId } = (await res.json()) as { orderId: string };

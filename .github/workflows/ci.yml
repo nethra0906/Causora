@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # node:sqlite and native TypeScript need Node 24+.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run check:docs
+      - run: npm run build:web
+
+      # Boots the real stack (four processes, real HTTP, SQLite bus) on isolated ports; takes about a minute.
+      - run: npm run test:e2e

@@ -55,7 +55,8 @@ function percentile(sorted: number[], p: number): number {
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))]!;
 }
 
-export function computeBaselines(events: NormalisedEvent[]): Array<Baseline & { dwell_p95_ms: number | null }> {
+/** `selfTime=false` is only for the heuristic ablation: a naive analyser would baseline raw durations too. */
+export function computeBaselines(events: NormalisedEvent[], selfTime = true): Array<Baseline & { dwell_p95_ms: number | null }> {
   const spans = events.filter((e) => e.source !== 'fault');
   const kids = childIndex(spans);
   const groups = new Map<string, NormalisedEvent[]>();
@@ -66,7 +67,7 @@ export function computeBaselines(events: NormalisedEvent[]): Array<Baseline & { 
   }
   const out: Array<Baseline & { dwell_p95_ms: number | null }> = [];
   for (const [, list] of [...groups].sort((a, b) => cmp(a[0], b[0]))) {
-    const durs = list.map((e) => exclusiveMs(e, kids)).filter((d): d is number => d !== null).sort((a, b) => a - b);
+    const durs = list.map((e) => (selfTime ? exclusiveMs(e, kids) : e.duration_ms)).filter((d): d is number => d !== null).sort((a, b) => a - b);
     const dwells = list.map((e) => e.dwell_ms).filter((d): d is number => d !== null).sort((a, b) => a - b);
     out.push({
       service: list[0]!.service,
@@ -209,6 +210,7 @@ export function investigate(input: InvestigateInput): Investigation {
   // observed per-operation error rate inside the subgraph (own, undiscounted errors only)
   const ownError = (e: RankableEvent): boolean => {
     if (!isErr(e)) return false;
+    if (!cfg.calleeErrorAttribution) return true; // ablation: every errored span claims its own error
     if (e.event_type === 'http.client.request' || e.event_type === 'timeout.fired') return false; // symptom types: they report on someone else
     return !(kids.get(e.span_id ?? '') ?? []).some(isErr); // bubbled-up from a failing child
   };
@@ -227,7 +229,7 @@ export function investigate(input: InvestigateInput): Investigation {
     const e = byId.get(id)!;
     const b = baseline.get(opKey(e));
     const available = !!b && b.sample_count >= cfg.minBaselineSamples;
-    const excl = exclusiveMs(e, kids);
+    const excl = cfg.selfTimeLatency ? exclusiveMs(e, kids) : e.duration_ms;
 
     let z = 0;
     let latency = 0;

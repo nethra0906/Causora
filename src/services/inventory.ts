@@ -18,9 +18,9 @@ interface Reservation {
   reservationId: string | null; // null => insufficient stock
 }
 
-function reserveStock(db: Db, orderId: string, sku: string, quantity: number): Reservation {
+function reserveStock(db: Db, orderId: string, sku: string, quantity: number, forceOutOfStock = false): Reservation {
   const row = db.prepare('SELECT available FROM stock WHERE sku = ?').get(sku) as { available: number } | undefined;
-  if (!row || row.available < quantity) return { reservationId: null };
+  if (forceOutOfStock || !row || row.available < quantity) return { reservationId: null };
   const reservationId = `res_${uuid().slice(0, 8)}`;
   db.prepare('UPDATE stock SET available = available - ?, reserved = reserved + ?, version = version + 1 WHERE sku = ?').run(quantity, quantity, sku);
   db.prepare('INSERT INTO reservations(id,order_id,sku,quantity,status,created_at) VALUES(?,?,?,?,?,?)').run(reservationId, orderId, sku, quantity, 'RESERVED', wallMs());
@@ -68,6 +68,12 @@ export async function startInventoryService(port: number = PORTS.inventory): Pro
       const key = msg.headers[MSG_HEADERS.idempotencyKey];
       const injected = faults.apply('handler_delay', 'inventory.reserve', span);
 
+      // Held-out scenario S5: an injected exception. The consume span ends ERROR and the bus redelivers.
+      if (faults.apply('error_response', 'inventory.reserve', span)) throw new Error('injected handler failure');
+      // Held-out scenario S6: treat stock as exhausted. The handler then REJECTS correctly and quickly —
+      // a deliberate decision, not an anomaly.
+      const outOfStock = !!faults.apply('config', 'force_out_of_stock', span);
+
       if (faults.config('idempotency_guard') === 'transactional') {
         // ── CORRECT implementation (control scenario `inventory_fix`): the idempotency record is
         // written in the SAME transaction as the reservation and a unique constraint decides.
@@ -75,7 +81,7 @@ export async function startInventoryService(port: number = PORTS.inventory): Pro
         const result = tx(db, () => {
           const claimed = db.prepare('INSERT OR IGNORE INTO processed_messages(idempotency_key,message_id,processed_at) VALUES(?,?,?)').run(key ?? msg.messageId, msg.messageId, wallMs());
           if (claimed.changes === 0) return null; // duplicate suppressed
-          const r = reserveStock(db, orderId, sku, quantity);
+          const r = reserveStock(db, orderId, sku, quantity, outOfStock);
           db.prepare('UPDATE processed_messages SET reservation_id = ? WHERE idempotency_key = ?').run(r.reservationId, key ?? msg.messageId);
           return r;
         });
@@ -97,7 +103,7 @@ export async function startInventoryService(port: number = PORTS.inventory): Pro
         return;
       }
       if (injected) await sleep(injected.ms ?? 0); // the injected fault widens the race window
-      const result = reserveStock(db, orderId, sku, quantity); // ACT
+      const result = reserveStock(db, orderId, sku, quantity, outOfStock); // ACT
       db.prepare('INSERT OR IGNORE INTO processed_messages(idempotency_key,message_id,reservation_id,processed_at) VALUES(?,?,?,?)').run(key ?? msg.messageId, msg.messageId, result.reservationId, wallMs()); // RECORD
       return announce(span, orderId, key, result, quantity);
     },

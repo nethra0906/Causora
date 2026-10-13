@@ -3,7 +3,7 @@
  * All decisions live in the pure modules (normalise, rules, analysis); this file only wires them
  * to the store and the clock.
  */
-import { DEFAULT_RULE_SET_ID, getRuleSet, type Baseline, type CausalEdge, type Investigation, type NormalisedEvent, type WireSpan } from '../contracts/index.ts';
+import { DEFAULT_RULE_SET_ID, getRuleSet, type AnalysisConfig, type Baseline, type CausalEdge, type Investigation, type NormalisedEvent, type WireSpan } from '../contracts/index.ts';
 import { wallMs } from '../lib/time.ts';
 import { computeBaselines, investigate } from './analysis.ts';
 import { normaliseSpan } from './normalise.ts';
@@ -75,8 +75,11 @@ export class Engine {
   }
 
   // ───────────────────────── investigation ─────────────────────────
-  /** Investigate under any rule set. Only the default result is cached (immutable per run). */
-  investigateNow(failureEventId: string, ruleSetId: string = DEFAULT_RULE_SET_ID, now: number = wallMs()): Investigation {
+  /**
+   * Investigate under any rule set. Only the default result is cached (immutable per run).
+   * `config` exists for the heuristic ablation; an investigation under a non-default config is never cached.
+   */
+  investigateNow(failureEventId: string, ruleSetId: string = DEFAULT_RULE_SET_ID, now: number = wallMs(), config?: AnalysisConfig): Investigation {
     clearTimeout(this.timers.get(failureEventId));
     this.timers.delete(failureEventId);
     const f = this.store.failureById(failureEventId);
@@ -88,12 +91,14 @@ export class Engine {
       businessOperationId: f.business_operation_id,
       events: applyMask(events, rs.masked),
       edges: deriveEdges(events, rs),
-      baselines: this.store.baselines(),
+      // A naive (no-self-time) analyser would have baselined raw durations too; do the same for a fair ablation.
+      baselines: config && !config.selfTimeLatency ? computeBaselines(this.store.allEvents({ kind: 'baseline' }), false) : this.store.baselines(),
       ruleSetId,
+      config,
       now,
       lastIngestAt: this.store.lastIngestAt(f.business_operation_id),
     });
-    if (ruleSetId === DEFAULT_RULE_SET_ID) this.store.saveInvestigation(inv);
+    if (ruleSetId === DEFAULT_RULE_SET_ID && !config) this.store.saveInvestigation(inv);
     return inv;
   }
 

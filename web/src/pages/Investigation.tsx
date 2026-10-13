@@ -94,7 +94,7 @@ export function InvestigationPage({ failureId }: { failureId: string }) {
               {investigation.candidates.length === 0 && (
                 <div className="empty small">
                   <strong>No anomalous event found in the ancestor subgraph.</strong>
-                  <p>Either the failure is not caused by upstream work, or the causal links needed to reach the cause are missing under this rule set.</p>
+                  <p>Either the causal links needed to reach the cause are missing under this rule set, or everything upstream behaved normally — for example a deliberate decision such as a stock rejection. Causora ranks anomalies; it cannot flag a correct-but-undesired decision, and it will not guess.</p>
                 </div>
               )}
               <ol className="cands">

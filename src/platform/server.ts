@@ -130,7 +130,7 @@ export async function startPlatform(port: number = PORTS.platform): Promise<{ st
   });
 
   app.post('/api/v1/evaluation/run', async (req, reply) => {
-    const n = Math.min(20, Math.max(1, Number((req.body as any)?.runsPerScenario ?? 8)));
+    const n = Math.min(20, Math.max(1, Number((req.body as any)?.runsPerScenario ?? 10)));
     const hardware: EvaluationDoc['hardware'] = { platform: `${platform()} ${release()}`, cpu: cpus()[0]?.model ?? 'unknown', cores: cpus().length, ram_gb: Math.round((totalmem() / 2 ** 30) * 10) / 10, node: process.version };
     if (store.baselines().length === 0) return reply.code(409).send(problem(409, 'Seed a baseline first (POST /api/v1/baseline/seed)'));
     const j = startJob('evaluation', () => runEvaluation(engine, runner, n, hardware));

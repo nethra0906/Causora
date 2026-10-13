@@ -23,6 +23,11 @@ export interface Scenario {
   expectFailure: boolean;
   expectedReason: string | null;
   control?: boolean;
+  /**
+   * Written (with predictions) BEFORE it was implemented or run — docs/experiments/held-out.md. Reported
+   * separately from the headline evaluation, and the analyser is frozen with respect to it.
+   */
+  heldOut?: boolean;
 }
 
 export const SCENARIOS: Scenario[] = [
@@ -76,6 +81,28 @@ export const SCENARIOS: Scenario[] = [
     expectFailure: false,
     expectedReason: null,
     control: true,
+  },
+  {
+    id: 'inventory-crash',
+    title: 'S5 · Inventory handler throws (held-out)',
+    description: 'An exception inside the reservation handler. The bus redelivers up to three times, then dead-letters; no reply is ever published, so the order service times out, retries and gives up. Pre-registered predictions: docs/experiments/held-out.md.',
+    symptom: 'The order fails with RETRY_EXHAUSTED — the same symptom as S4, from a different cause (an error, not slowness).',
+    faults: [{ service: 'inventory', faults: [{ type: 'error_response', target: 'inventory.reserve', rate: 1 }] }],
+    truth: { service: 'inventory-service', operation: 'inventory.reserve' },
+    expectFailure: true,
+    expectedReason: 'RETRY_EXHAUSTED',
+    heldOut: true,
+  },
+  {
+    id: 'inventory-reject',
+    title: 'S6 · Inventory rejects for lack of stock (held-out)',
+    description: 'The reservation handler correctly publishes inventory.rejected because stock is exhausted. Nothing is slow and nothing errors: the rejection is a deliberate decision. Pre-registered prediction: the analyser will be confidently connected and wrong about the origin.',
+    symptom: 'The order fails with INSUFFICIENT_STOCK. Every span upstream looks healthy.',
+    faults: [{ service: 'inventory', faults: [{ type: 'config', target: 'force_out_of_stock', value: 'true' }] }],
+    truth: { service: 'inventory-service', operation: 'inventory.reserve' },
+    expectFailure: true,
+    expectedReason: 'INSUFFICIENT_STOCK',
+    heldOut: true,
   },
 ];
 

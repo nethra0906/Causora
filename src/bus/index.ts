@@ -195,7 +195,7 @@ export function subscribe(input: SubscribeInput): { stop(): void } {
           // A consumer starts a NEW trace (the standard messaging pattern): W3C parentage does not
           // cross the broker, which is precisely why the causal contract exists.
           parent: 'none',
-          eventId: consumeEventId(msg.messageId, group),
+          eventId: consumeEventId(msg.messageId, group, attempts),
           businessOperationId: headers[MSG_HEADERS.businessOperationId],
           causationId: headers[MSG_HEADERS.eventId],
           idempotencyKey: headers[MSG_HEADERS.idempotencyKey],
@@ -207,6 +207,7 @@ export function subscribe(input: SubscribeInput): { stop(): void } {
             [ATTR.topic]: topic,
             [ATTR.messageKey]: msg.key,
             [ATTR.messageId]: msg.messageId,
+            'messaging.delivery_attempt': attempts,
             ...(Number.isFinite(producedAt) ? { [ATTR.producedAt]: producedAt } : {}),
             'messaging.link.trace_id': parseTraceparent(headers[MSG_HEADERS.traceparent])?.traceId ?? '',
           },

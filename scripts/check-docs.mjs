@@ -1,12 +1,12 @@
 /**
  * Mechanical doc check: every backticked repository path must exist, every "`symbol` in `path`"
  * claim must be true, and every quoted test name must exist in the suite. Run after refactors:
- *   node scripts/check-docs.mjs [file ...]      (defaults to README, interview-prep, PROGRESS, DECISIONS)
+ *   node scripts/check-docs.mjs [file ...]      (defaults to README, interview-prep, DEMO, PROGRESS, DECISIONS)
  */
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const files = process.argv.slice(2).length ? process.argv.slice(2) : ['README.md', 'docs/interview-prep.md', 'PROGRESS.md', 'DECISIONS.md'];
+const files = process.argv.slice(2).length ? process.argv.slice(2) : ['README.md', 'docs/interview-prep.md', 'docs/DEMO.md', 'PROGRESS.md', 'DECISIONS.md'];
 
 const walk = (dir) => readdirSync(dir).flatMap((n) => {
   const p = join(dir, n);

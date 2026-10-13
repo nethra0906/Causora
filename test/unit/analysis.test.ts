@@ -212,3 +212,50 @@ test('an investigation keeps the operation id even when business_operation_id is
   const inv = investigate({ failureEventId: 'F', businessOperationId: 'ord_1', events: applyMask(events, rs.masked), edges: deriveEdges(events, rs), baselines: healthyBaselines(events), ruleSetId: rs.id, now: NOW, lastIngestAt: LAST });
   assert.equal(inv.business_operation_id, 'ord_1');
 });
+
+// ───────────────────────── the two fitted heuristics, individually ─────────────────────────
+function s2Shape() {
+  return [
+    ev({ event_id: 'set', service: 'order-service', operation: 'order.settle', event_type: 'domain.state_change', occurred_at: T0, duration_ms: 810, status: 'ERROR', error_type: 'PAYMENT_TIMEOUT' }),
+    ev({ event_id: 'cli', service: 'order-service', operation: 'order.call_payment', event_type: 'http.client.request', occurred_at: T0 + 1, duration_ms: 800, parent_span_id: 'span-set', causation_id: 'set', status: 'TIMEOUT', error_type: 'TIMEOUT' }),
+    ev({ event_id: 'srv', service: 'payment-service', operation: 'payment.authorize', event_type: 'http.server.request', occurred_at: T0 + 3, duration_ms: 1500, parent_span_id: 'span-cli', causation_id: 'cli' }),
+    ev({ event_id: 'to', service: 'order-service', operation: 'order.payment_wait.timeout', event_type: 'timeout.fired', occurred_at: T0 + 802, duration_ms: 0, parent_span_id: 'span-set', causation_id: 'cli', awaited_correlation_id: 'srv', status: 'TIMEOUT', error_type: 'TIMEOUT' }),
+    ev({ event_id: 'fail', service: 'order-service', operation: 'order.failed', event_type: 'domain.state_change', occurred_at: T0 + 803, duration_ms: 0, parent_span_id: 'span-set', causation_id: 'to', status: 'ERROR', error_type: 'PAYMENT_TIMEOUT' }),
+  ];
+}
+/** Rank-1 event for the S2-shaped failure under a given analysis config (generic healthy baselines: p95 = 6 ms). */
+function s2Top(cfg: Partial<typeof DEFAULT_CONFIG>): { id: string; service: string } {
+  const events = s2Shape();
+  const inv = investigate({
+    failureEventId: 'fail', events, edges: deriveEdges(events, getRuleSet('default')), baselines: healthyBaselines(events),
+    ruleSetId: 'default', now: NOW, lastIngestAt: LAST, config: { ...DEFAULT_CONFIG, ...cfg },
+  });
+  const top = inv.candidates[0]!;
+  return { id: top.event_id, service: top.service };
+}
+
+test('heuristic flags default to ON and the shipped config blames the slow callee', () => {
+  assert.equal(DEFAULT_CONFIG.selfTimeLatency, true);
+  assert.equal(DEFAULT_CONFIG.calleeErrorAttribution, true);
+  assert.deepEqual(s2Top({}), { id: 'srv', service: 'payment-service' });
+});
+
+test('without callee error attribution, blame lands on the CALLER side (order service), not the slow callee', () => {
+  const top = s2Top({ calleeErrorAttribution: false });
+  assert.equal(top.service, 'order-service', 'the caller\'s own TIMEOUT/ERROR is counted as its own anomaly');
+  assert.notEqual(top.id, 'srv');
+});
+
+test('without self-time, the caller\'s raw 800 ms wait is scored as its own slowness and blamed', () => {
+  const top = s2Top({ selfTimeLatency: false });
+  assert.equal(top.service, 'order-service', 'an 800 ms wait on a slow callee is not the caller\'s fault');
+  assert.notEqual(top.id, 'srv');
+});
+
+test('turning a heuristic off never changes the shipped default result (flags are inert unless asked for)', () => {
+  const events = s1Events();
+  const rs = getRuleSet('default');
+  const base = investigate({ failureEventId: 'F', events, edges: deriveEdges(events, rs), baselines: healthyBaselines(events), ruleSetId: 'default', now: NOW, lastIngestAt: LAST });
+  const explicit = investigate({ failureEventId: 'F', events, edges: deriveEdges(events, rs), baselines: healthyBaselines(events), ruleSetId: 'default', now: NOW, lastIngestAt: LAST, config: { ...DEFAULT_CONFIG } });
+  assert.equal(JSON.stringify(base.candidates), JSON.stringify(explicit.candidates));
+});
