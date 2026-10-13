@@ -483,3 +483,39 @@ unchanged. Only the plumbing around them shrinks.
 benchmark/Compose DoD items (1, 12, 16) are replaced by `npm start` equivalents and a
 measured micro-benchmark. Anything that was in the blueprint and is absent here is listed in
 README "Scope" so no one assumes it exists.
+
+---
+
+<a id="adr-0018"></a>
+## ADR-0018: Held-out scenarios with pre-registered predictions; distinct event ids for redeliveries
+
+**Context.** Two analysis heuristics (self-time latency; attributing a caller's error to its callee) were
+added after S2/S3 failed, so the headline evaluation cannot show they generalise. Separately, event ids for
+consumers are deterministic (`consume:<message>:<group>`) so that a timeout can name an event before it runs —
+a design that silently assumed one delivery per message.
+
+**Decision.**
+
+1. Evaluate on **held-out scenarios** under a written protocol (`docs/experiments/held-out.md`): predictions
+   and their confidence are written *before* the scenario is implemented; the analyser is **frozen** for them;
+   a held-out result may never be "fixed" by tuning; a genuine *defect* may be fixed, with the result reported
+   before and after; every refuted prediction is reported. Held-out runs are reported separately and never
+   mixed into the headline table. Verdicts are produced by a grader reading the numbers
+   (`scripts/cli.ts`), not by judgement.
+2. Consumer event ids are `consume:<message>:<group>` for the **first** delivery and
+   `consume:<message>:<group>#<n>` for redeliveries.
+
+**Alternatives rejected.**
+
+- *Tune the heuristics until S5/S6 pass.* Defeats the purpose: a held-out set that is tuned against is a
+  training set.
+- *Carry the delivery count inside the id for every delivery.* A waiter (the order service's timeout) cannot know
+  the delivery number in advance, so it could no longer name the consumer it awaited.
+- *Link redeliveries with `retry_of`.* Reasonable, but it would also change retry-density scoring for S5 and
+  confound the before/after comparison; deferred.
+
+**Consequences.** The experiment found one real defect (3.0 vs 9.0 stored events per run) and one honest
+limitation (S6: the analyser abstains on a correct-but-undesired decision). It does **not** validate the two
+fitted heuristics, because S5's origin is a leaf span with its own error; that remains a stated weakness.
+"Held-out" here means predicted-first and not tuned-after, not independent: one author wrote the app, the
+analyser and the scenarios.

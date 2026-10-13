@@ -44,3 +44,65 @@ Hit@1 matches the injected service + operation. "First instance" additionally re
 ## Control
 
 - `inventory-fix`: 10/10 orders confirmed, 0 DUPLICATE_OF edges (expected 0 — the corrected guard removes exactly that edge).
+
+## What the two fitted heuristics buy
+
+Both heuristics (self-time latency; attributing a caller's error/timeout to its callee) were added **after** S2/S3 failed. This table re-investigates **every failure run** (headline + held-out) with each one switched off, same stored events, default rule set; a naive variant also baselines raw durations. It measures what they *buy*. It does **not** show they generalise — that needs scenarios written without ever seeing them fail.
+
+| Variant | Hit@1 (all 60 runs) | MRR | inventory-delay-duplicate | payment-latency | payment-error | retry-exhaustion | inventory-crash | inventory-reject |
+|---|---|---|---|---|---|---|---|---|
+| Both heuristics (shipped) | 83% | 0.83 | 100% | 100% | 100% | 100% | 100% | 0% |
+| Without self-time latency | 67% | 0.75 | 100% | 0% | 100% | 100% | 100% | 0% |
+| Without callee error attribution | 50% | 0.67 | 100% | 0% | 0% | 100% | 100% | 0% |
+| Without either (naive scoring) | 50% | 0.64 | 100% | 0% | 0% | 100% | 100% | 0% |
+
+Scenarios whose result does not change under **any** variant (so they do not exercise either heuristic): `inventory-delay-duplicate`, `retry-exhaustion`, `inventory-crash`, `inventory-reject`.
+
+
+## Held-out scenarios — pre-registered predictions vs. what happened
+
+Predictions were written **before** these scenarios were implemented ([held-out.md](held-out.md)); the analyser was frozen for them. Verdicts below are computed, not judged.
+
+### S5 · Inventory handler throws (held-out)
+
+| Prediction | Verdict | Observed |
+|---|---|---|
+| P1 every run fails with RETRY_EXHAUSTED | ✔ confirmed | 10/10 reproduced; outcomes: FAILED/RETRY_EXHAUSTED ×10 |
+| P2 default Hit@1 = 100% | ✔ confirmed | Hit@1 100% · first-instance 100% · Hit@3 100% |
+| P3 label STRONG/SUPPORTED; TIMEOUT_CASCADE + RETRY_STORM detected | ✔ confirmed | labels: STRONG ×10; patterns: RETRY_STORM ×10, TIMEOUT_CASCADE ×10 |
+| P4 tracing-only Hit@1 = 0% | ✔ confirmed | 0% / 0% |
+| P5 without awaited_correlation_id Hit@1 = 0% | ✔ confirmed | 0% |
+| P6 redeliveries collide on one event id (a defect), without changing Hit@1 | fixed — the defect was confirmed before the fix (evidence: results-before-redelivery-fix.md); every delivery is now kept | mean 9.0 stored inventory.reserve events per run (9 = every delivery kept, 3 = one per message) |
+
+| Rule set | Hit@1 | Hit@3 | MRR | Origin reachable |
+|---|---|---|---|---|
+| `default` | 100% | 100% | 1.00 | 100% |
+| `ablation.no_causation_id` | 100% | 100% | 1.00 | 100% |
+| `ablation.no_causation_id.no_inference` | 100% | 100% | 1.00 | 100% |
+| `ablation.no_retry_of` | 100% | 100% | 1.00 | 100% |
+| `ablation.no_awaited` | 0% | 0% | 0.00 | 0% |
+| `ablation.no_idempotency_key` | 100% | 100% | 1.00 | 100% |
+| `ablation.tracing_only` | 0% | 0% | 0.00 | 0% |
+| `ablation.tracing_only.no_inference` | 0% | 0% | 0.00 | 0% |
+
+### S6 · Inventory rejects for lack of stock (held-out)
+
+| Prediction | Verdict | Observed |
+|---|---|---|
+| Q1 every run fails with INSUFFICIENT_STOCK | ✔ confirmed | 10/10 reproduced; outcomes: FAILED/INSUFFICIENT_STOCK ×10 |
+| Q2 default Hit@1 = 0%; top candidate is in the order service | ✘ refuted | Hit@1 0%; top: (no candidate) ×10 |
+| Q3 COMPLETE, origin connected, and a confident-looking wrong answer | ~ partly (connected, but the analyser abstained rather than answering wrongly) | completeness: COMPLETE ×10; origin in subgraph 100%; labels: (none) ×10 |
+
+| Rule set | Hit@1 | Hit@3 | MRR | Origin reachable |
+|---|---|---|---|---|
+| `default` | 0% | 0% | 0.00 | 100% |
+| `ablation.no_causation_id` | 0% | 0% | 0.00 | 100% |
+| `ablation.no_causation_id.no_inference` | 0% | 0% | 0.00 | 0% |
+| `ablation.no_retry_of` | 0% | 0% | 0.00 | 100% |
+| `ablation.no_awaited` | 0% | 0% | 0.00 | 100% |
+| `ablation.no_idempotency_key` | 0% | 0% | 0.00 | 100% |
+| `ablation.tracing_only` | 0% | 0% | 0.00 | 100% |
+| `ablation.tracing_only.no_inference` | 0% | 0% | 0.00 | 0% |
+
+Held-out runs are **not** included in the headline table above. Q4 (the analyser localises anomalies, not decisions) is interpretive and not machine-graded.
+

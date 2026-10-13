@@ -1,6 +1,6 @@
 # Fault Injection Design
 
-> **Build status — blueprint document.** Built: S1 (inventory delay → duplicate), S2 (payment latency), S3 (payment 503), S4 (retry exhaustion) and the `inventory-fix` control. Not built: crash-after and clock-offset scenarios (the clock-offset fault type exists, no scenario uses it) and S5–S7. Timing is scaled as described in the demo-application note. A fault `target` is the logical **operation name** (e.g. `inventory.reserve`), not a route.
+> **Build status — blueprint document.** Built: S1 (inventory delay → duplicate), S2 (payment latency), S3 (payment 503), S4 (retry exhaustion) and the `inventory-fix` control, plus two held-out scenarios, `inventory-crash` (handler throws) and `inventory-reject` (deliberate out-of-stock rejection), whose predictions are pre-registered in [held-out.md](../experiments/held-out.md). The app's S5/S6 are *not* the blueprint's S5–S7. Not built: crash-after and clock-offset scenarios (the clock-offset fault type exists, no scenario uses it) and the blueprint's S5–S7. Timing is scaled as described in the demo-application note. A fault `target` is the logical **operation name** (e.g. `inventory.reserve`), not a route.
 
 Fault injection serves two purposes, and the second one is the important one:
 

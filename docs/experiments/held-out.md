@@ -50,3 +50,73 @@ service times out, retries (attempt 2, 3) and gives up with `RETRY_EXHAUSTED`.
 
 Each prediction is marked ✔ confirmed / ✘ refuted / ~ partly, in `docs/experiments/results.md` (generated)
 and summarised in the README, **including every refuted prediction.**
+
+---
+
+# Results (added 2026-10-13, after the run — everything above this line is unchanged)
+
+10 runs of each scenario, `npm run eval -- 10`. The generated, machine-graded version is
+[results.md](results.md); the run *before* the one defect fix below is preserved in
+[results-before-redelivery-fix.md](results-before-redelivery-fix.md).
+
+## S5 — handler throws: 6 of 6 confirmed
+
+| # | Prediction | Result |
+|---|---|---|
+| P1 | every run fails `RETRY_EXHAUSTED` | ✔ 10/10 |
+| P2 | default Hit@1 = 100% | ✔ 100% (first-instance 100%) |
+| P3 | label `STRONG`/`SUPPORTED`; `TIMEOUT_CASCADE` + `RETRY_STORM` | ✔ `STRONG` ×10, both patterns ×10 |
+| P4 | tracing-only Hit@1 = 0% | ✔ 0% / 0% |
+| P5 | without `awaited_correlation_id`, Hit@1 = 0% | ✔ 0% |
+| P6 | redeliveries collide on one event id (a defect), Hit@1 unaffected | ✔ **3.0** stored `inventory.reserve` events per run where 9 = every delivery kept; Hit@1 100% |
+
+**P6 was a real defect, and it was fixed — as a defect, not as tuning.** `consumeEventId(message, group)` was
+deterministic so a timeout can name the consumer it awaited, but it assumed one delivery. When a handler fails
+and the bus redelivers, all deliveries shared one id and two of three were silently discarded at ingest, so the
+evidence of the redeliveries was lost. Fix: the first delivery keeps the bare id (the only one a waiter can
+compute); redeliveries get `#<n>`. A unit test pins it and was mutation-checked (it fails with the old
+behaviour). After the fix: **9.0 stored events per run**, and every S5 result above is unchanged.
+
+## S6 — deliberate rejection: 1 confirmed, 1 refuted, 1 partly
+
+| # | Prediction | Result |
+|---|---|---|
+| Q1 | every run fails `INSUFFICIENT_STOCK` | ✔ 10/10 |
+| Q2 | Hit@1 = 0%, and the top candidate is in the order service | ✘ **refuted in detail.** Hit@1 is 0%, but there is **no top candidate at all**: the analyser returned zero candidates on all 10 runs. |
+| Q3 | `COMPLETE`, origin connected, *and* a confident-looking wrong answer | ~ **partly.** `COMPLETE` ×10 and the origin is in the ancestor subgraph ×10 — but there was no wrong answer to be confident about. |
+| Q4 | the analyser localises anomalies, not decisions | supported (interpretive) |
+
+**Why it abstained.** The ancestor subgraph is the correct 6-event chain, fully proven. Nothing in it is
+anomalous: every upstream span is `OK` and sub-millisecond. The only error is `order.failed` itself, and
+`order.failed` has **no baseline** (healthy traffic never produces it), so its error cannot be rated against
+one and scores 0.25 — below the 0.35 anomaly threshold. With no anomalous event, there is no candidate; the
+Investigation page shows "No anomalous event found in the ancestor subgraph".
+
+**Reading it honestly.** My prediction of a *wrong* confident answer was too pessimistic: the analyser
+declined to guess rather than blaming the order service. That is the better failure mode, but it is still a
+failure: the user gets nothing. The class of fault this cannot localise is a correct-but-undesired decision.
+I did **not** change the analyser to rescue S6 (rule 1), and the abstention is not a fix-by-design — it is a
+limitation to state.
+
+## What changed after seeing the results (full disclosure)
+
+1. The redelivery event-id defect (above). Analyser untouched.
+2. The grader's Q3 check was too lenient: it passed on connectivity alone while the prediction also claimed a
+   confident wrong answer. I made it stricter, so it now reports "partly". This made my own result look *worse*.
+3. The generated P6 line now reads "fixed — confirmed before the fix" instead of "refuted", because after the
+   fix the defect no longer exists and a bare "refuted" would mislead.
+
+## What this does and does not show
+
+- S5 does **not** exercise the self-time / callee-attribution heuristics, and this is now **measured**, not
+  argued (the "What the two fitted heuristics buy" table in [results.md](results.md), added after the first
+  version of this section). With either heuristic — or both — switched off, the results for S1, S4, S5 and S6
+  do not change at all; only S2 and S3 move (Hit@1 100% → 0%: self-time matters for S2, callee attribution for
+  S2 *and* S3). Those are exactly the two scenarios the heuristics were fitted to. So **no held-out scenario
+  validates them**: the weakness I started from stands, and the ablation shows what they buy, not that they
+  generalise. What S5 does show is that the rest of the pipeline works on a failure it was not developed
+  against; it is structurally close to S4, so that is a modest result.
+- S6 is a genuinely different failure class, and the analyser does not handle it.
+- "Held-out" here means *predicted in writing before implementation and not tuned afterwards*. It is not
+  independent: the same person wrote the app, the analyser and the scenarios, and each scenario is 10
+  near-identical runs.

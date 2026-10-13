@@ -23,7 +23,11 @@ to the specific places the answer lives.
 | Investigation of a 2,000-node subgraph | **6.8 ms p50 / 11 ms p95** | same |
 | Failure → visible in the API | ≤ **338 ms** (5 runs); UI polls every 2 s | PROGRESS.md DoD #4 |
 | Whole stack footprint | **≈ 407 MB** across 5 Node processes | PROGRESS.md |
-| Tests | 55 unit (no processes) + 6 e2e (real stack); `rules` 97%, `analysis` 98% line coverage | `npm test`, `npm run test:e2e` |
+| Tests | 59 unit (no processes) + 8 e2e (real stack); `rules` 100%, `analysis` 98.5% line coverage | `npm test`, `npm run test:e2e` |
+| Held-out S5 (handler throws), predictions written first | **6 of 6 confirmed**; Hit@1 100%, `STRONG` ×10 | `docs/experiments/results.md`, `docs/experiments/held-out.md` |
+| Held-out S6 (deliberate rejection) | Hit@1 **0%**; the analyser returned **no candidate** (abstained); one prediction refuted, one partly | same |
+| What the two fitted heuristics buy | Switching either off drops **S2 and S3 from 100% to 0%** Hit@1 and changes **nothing** on S1/S4/S5/S6 — so they are needed on the scenarios they were fitted to, and **unvalidated elsewhere** | `docs/experiments/results.md`, section "What the two fitted heuristics buy" |
+| Event-id collision found by prediction P6 | **3.0 → 9.0** stored events per run after the fix | `docs/experiments/results-before-redelivery-fix.md` vs `docs/experiments/results.md` |
 
 Do **not** quote anything not in this table. Always attach the caveat: *40 runs of four scenario
 types on a deliberately small system — reliability and the value of each field, not generalisation.*
@@ -123,7 +127,16 @@ Pick one and go deep:
 ### "Tell me about a bug you found in your own work."
 
 You have unusually good material, because the green tests did **not** find these (PROGRESS.md has
-the full table):
+the full table). **Lead with this one — it is the cleanest story:**
+
+- *A bug I predicted, then measured.* Before writing a held-out scenario I wrote down that "redeliveries of one
+  message will collide on a single event id and two of three will be silently dropped". Then I ran it: 3.0 stored
+  events per run where 9 means every delivery kept. The id was deterministic *on purpose* (so a timeout can name
+  the consumer it awaits before it runs) and silently assumed one delivery. I fixed it as a **defect, not by
+  tuning**: first delivery keeps the awaitable id, later ones get `#n`; a regression test fails on the old code,
+  and the before/after runs are both kept in the repo. The same run also refuted a different prediction of
+  mine (I expected the analyser to blame the wrong service on a deliberate rejection; it returned *nothing*), and
+  I reported that too.
 
 - *The runner swallowed a 400.* Fault cleanup sent `DELETE` with a JSON content-type and no body;
   Fastify rejected it and my `.catch(() => undefined)` hid it. Faults leaked between scenarios, so S2–S4
@@ -170,6 +183,8 @@ the full table):
 | How do you propagate context through a broker? | `publish()` sets the `MSG_HEADERS` set (`traceparent`, event id, causation id, business-operation id, idempotency key, attempt, retry-of, produced-at); `subscribe()` extracts them and opens the consume span *before* the handler runs. Round-trip test in `test/unit/pipeline.test.ts`. |
 | What is consumer lag and why care? | `dwell_ms` = consume time − `produced_at`, scored against a baseline p95. Note it is **cross-clock**, so it carries a declared uncertainty. In these scenarios the delay is *inside* the handler, so dwell stays small; the dwell signal is implemented but not the star of any scenario. |
 | Why key by order id? | The key is recorded (`message_key`) and used by the inference rule to match consumers to producers; there are no partitions to key into. |
+| How do you identify a redelivered message as an event? | `consumeEventId(message, group, delivery)` in `src/contracts`: the first delivery keeps the bare, awaitable id; redeliveries get `#n`. Found as a defect via held-out prediction P6 (they used to collide and be dropped); regression test in `test/unit/pipeline.test.ts`. |
+| What failures can't it localise? | A correct-but-undesired *decision* (held-out S6: inventory rejects for lack of stock). Every upstream span is healthy, so nothing is anomalous, and `order.failed` has no baseline; the analyser returns no candidate rather than guessing. It localises anomalies, not decisions. `docs/experiments/held-out.md`. |
 
 ### Databases
 
@@ -207,7 +222,7 @@ the full table):
 |---|---|
 | Why not microservices for the platform? | Shared store, one operator; splitting multiplies the debugging surface of a debugging tool. One process; analysis is pure and can move to a worker thread. ADR-0008 note. |
 | What would you do differently? | Build the evaluation harness *first*. Three of the nine bugs I found were visible only in edge lists or ablation output, not in unit tests. Also: the 1.5 s settle window makes the happy path slow (a real trade-off I'd revisit). |
-| What is the biggest weakness? | See §3: two heuristics were added after observing failures in my own scenarios, and there is no held-out scenario. Plus: 4 scenario types, one author for app and analyser. |
+| What is the biggest weakness? | See §3: two heuristics were added after observing failures in my own scenarios; I then pre-registered two held-out scenarios (results in `docs/experiments/results.md`). Plus: one author for app and analyser, and a small system. |
 | How would you productionise it? | ClickHouse for events, stream processing keyed by saga for derivation, multi-tenancy (authorisation on telemetry crossing teams is the hard part), causally-aware tail sampling, and shipping the contract as a real SDK. `docs/scalability.md` — design only. |
 | Where would it break first? | Honestly: unmeasured beyond BM1/BM2. Likely the single SQLite writer, then per-batch re-derivation cost on very long operations. |
 
@@ -230,8 +245,20 @@ the full table):
 a caller's error/timeout to its *callee* — exist because my first version ranked the HTTP client span as
 the origin in S2/S3. They are principled (a caller waiting on a slow callee must not look slower than the
 callee), but I added them after seeing those scenarios fail, so they are fitted to my scenarios. The
-ablation controls for the contract, not for this. A held-out scenario written *before* looking at the
-output is the honest next step. Saying this unprompted is worth more than any number above.
+ablation controls for the contract, not for this. So I wrote two held-out scenarios — `inventory-crash` and
+`inventory-reject` — with **predictions written in `docs/experiments/held-out.md` before the code existed** (git history
+cannot prove the order — nothing was committed before the run — so say "I wrote them down first" and show the
+prediction table, which `docs/experiments/results.md` grades line by line; do not claim a timestamped commit), and froze the analyser for them. The graded verdicts are generated into `docs/experiments/results.md` by
+`npm run eval`; quote them exactly, **including any refuted prediction** (I expected S6, a deliberate
+rejection that looks healthy to anomaly scoring, to be missed). Saying all this unprompted is worth more
+than any number above.
+
+**Be ready for the obvious follow-up: "so did the held-out scenarios validate those two heuristics?"** No — and
+you can show why. A heuristic ablation (section "What the two fitted heuristics buy" of `docs/experiments/results.md`)
+switches each one off over all 60 failure runs: S2 and S3 fall from 100% to 0% Hit@1, and S1/S4/S5/S6 do not
+change at all. They are *necessary* on the scenarios they were fitted to and *irrelevant* on the rest, so no
+current scenario tests whether they generalise. The next experiment would be a scenario written without ever
+having seen it fail.
 
 The most valuable row in the table is the last pair: volunteering the difference between *where the
 chain started* and *what should be fixed* demonstrates a precision about causality that is rare.
