@@ -42,7 +42,7 @@ npm run demo:happy-path       # an order reaches CONFIRMED; 9 events, 9 proven e
 npm run demo:primary-failure  # inject S1, print the ranked investigation + evidence
 npm run eval                  # 40 scored runs × 8 rule sets → docs/experiments/results.md
 npm run bench                 # → docs/benchmarks/results.md
-npm test                      # 55 unit tests, no processes
+npm test                      # 59 unit tests, no processes
 npm run test:e2e              # boots the real stack on isolated ports (~40 s)
 npm run check:docs            # every path/symbol/test name/link cited in the docs resolves
 ```
@@ -70,7 +70,7 @@ The symptom surfaces in a *different service*, in a *different trace*, seconds l
 The guard is a genuine, common correctness bug — the Fault Lab also ships the **corrected guard** as a
 control: same fault, order confirmed, and exactly the `DUPLICATE_OF` edge disappears.
 
-Five scenarios, each with an automated graph assertion:
+Six failure scenarios and a control, each with an automated check (S1–S4 assert their full graph; S5/S6 assert their mechanics):
 
 | | Fault | Failure | Exercises |
 |---|---|---|---|
@@ -79,6 +79,8 @@ Five scenarios, each with an automated graph assertion:
 | **S3** | payment returns 503 | `PAYMENT_FAILED` | the easy synchronous case |
 | **S4** | handler slower than the whole retry budget | `RETRY_EXHAUSTED` | late-arriving telemetry; completeness is `PROVISIONAL` until it settles |
 | **control** | S1's fault + corrected guard | none | the counterfactual |
+| **S5** *(held-out)* | handler throws | `RETRY_EXHAUSTED` | an error, not slowness; broker redelivery |
+| **S6** *(held-out)* | inventory deliberately rejects (no stock) | `INSUFFICIENT_STOCK` | a *decision* that looks healthy to anomaly scoring |
 
 ---
 
@@ -164,6 +166,44 @@ system. It measures reliability and the value of each field; it does **not** cla
 unseen failures. Runs within a scenario are structurally near-identical, so the ± is mostly
 between-scenario spread. Weights are the declared defaults and were not tuned on these results.
 
+### Held-out scenarios: predicted in writing first, analyser frozen
+
+Two heuristics (self-time latency, attributing a caller's error to its callee) were added *after* I watched
+S2/S3 fail, so the 40-run table can't show they generalise. So I wrote two new scenarios and my
+predictions for them in [docs/experiments/held-out.md](docs/experiments/held-out.md) **before** implementing
+either, froze the analyser, and let `npm run eval` grade the predictions mechanically
+([results.md](docs/experiments/results.md)). The held-out runs are not in the table above.
+
+| | Predicted | What happened |
+|---|---|---|
+| **S5** handler throws | ranked correctly; `STRONG`; tracing-only 0%; needs `awaited_correlation_id`; and a *defect*: redeliveries collide on one event id | **6 of 6 confirmed.** Hit@1 100%, `STRONG` ×10, tracing-only 0%, no-`awaited` 0%. The defect was real: **3.0 stored events/run where 9 means every delivery kept** |
+| **S6** deliberate rejection | Hit@1 = 0%, top candidate wrongly in the order service; confidently connected | Hit@1 **0%** ✔, but **refuted in detail**: there was *no candidate at all*. The analyser **abstained** (nothing upstream is anomalous; `order.failed` has no baseline). Connected and `COMPLETE` ✔, but "partly" on Q3 since there was no wrong answer to be confident about |
+
+- The defect was fixed **as a defect, not by tuning**: the first delivery keeps its awaitable id, redeliveries
+  get `#n`. A unit test pins it (mutation-checked); S5 is unchanged afterwards (9.0 events/run). The pre-fix
+  run is preserved in [results-before-redelivery-fix.md](docs/experiments/results-before-redelivery-fix.md).
+- **What I changed after seeing results, in full:** that fix; and my grader's Q3 check, which I made *stricter*
+  because it had flattered me. The analyser was not touched.
+- **The honest limit:** S6 is a failure class the analyser cannot localise — a correct-but-undesired
+  *decision*. Abstaining beats guessing, but the user still gets nothing.
+- **What this doesn't show:** S5 does not exercise the two heuristics, so it **does not validate them** — and
+  that is measured (next table), not assumed. "Held-out" means predicted-first and not tuned-after, not
+  independent: one author wrote the app, the analyser and the scenarios.
+
+**What the two fitted heuristics actually buy** (same stored events, each switched off, all 60 failure runs):
+
+| Variant | Hit@1 (60 runs) | S1 | S2 | S3 | S4 | S5 | S6 |
+|---|---|---|---|---|---|---|---|
+| Both heuristics (shipped) | 83% | 100% | 100% | 100% | 100% | 100% | 0% |
+| Without self-time latency | 67% | 100% | **0%** | 100% | 100% | 100% | 0% |
+| Without callee error attribution | 50% | 100% | **0%** | **0%** | 100% | 100% | 0% |
+| Without either (naive scoring) | 50% | 100% | **0%** | **0%** | 100% | 100% | 0% |
+
+They are **necessary on exactly S2 and S3** — the two scenarios they were fitted to — and change nothing on
+S1, S4, S5 or S6. So the ablation shows what they buy, not that they generalise: no scenario I have *not*
+already seen fail exercises them. That claim remains unvalidated. (S6 is 0% under every variant: the
+analyser abstains, as above.)
+
 **Performance** ([docs/benchmarks/results.md](docs/benchmarks/results.md), single machine, in-process):
 ~15–17 k events/s through ingest → persist → edge derivation; a 2,000-node investigation in
 **6.8 ms p50 / 11 ms p95**. Failure → listed in the API: ≤ 338 ms worst of 5 (the UI polls every 2 s).
@@ -187,7 +227,7 @@ between-scenario spread. Weights are the declared defaults and were not tuned on
 ```
 
 - **Pure core.** `normalise`, every edge rule and the whole analysis are pure functions: no I/O, no
-  clock, no randomness. That is why 55 unit tests need no containers, derivation is idempotent,
+  clock, no randomness. That is why 59 unit tests need no containers, derivation is idempotent,
   and **replay is just "derive again"** — the ablation is a config file, not a code path.
 - **Late and out-of-order telemetry is normal.** Derivation re-runs per business operation on every
   batch, so a consumer that arrives before its producer is linked the moment the producer lands.
@@ -214,8 +254,13 @@ are intact. The plumbing shrank:
 
 ## Honest limitations
 
-- A **small system by design**: three services, one saga, five scenarios. The evaluation is about the
+- A **small system by design**: three services, one saga, six failure scenarios. The evaluation is about the
   value of the contract, not a claim of production coverage.
+- **The analyser localises anomalies, not decisions.** A correct-but-undesired outcome (S6: an inventory
+  rejection) leaves nothing anomalous upstream, so it returns *no candidate*. It abstains instead of guessing,
+  but the user gets no answer.
+- Two analysis heuristics were fitted after seeing S2/S3 fail. An ablation shows they are necessary on exactly
+  those two scenarios and irrelevant elsewhere; **no scenario validates that they generalise.**
 - The bus is a **SQLite table**, not a distributed log: no partitions, no scale-out, single node.
 - Heuristic weights are **declared, not learned**, and not tuned. Anything resembling a probability is a
   label of evidence class.
@@ -230,8 +275,9 @@ are intact. The plumbing shrank:
 
 | | |
 |---|---|
-| Unit tests | **55**, no processes; `rules` **97%** and `analysis` **98%** line coverage (gate: 80%) |
-| End-to-end | **6**, real stack on isolated ports: S1 reproduces ≥ 9/10 with the exact expected chain, rank 1 + `STRONG`, every scenario's graph, control, fault cleanup, gate |
+| Unit tests | **59**, no processes; `rules` **100%** and `analysis` **98.5%** line coverage (gate: 80%) |
+| End-to-end | **8**, real stack on isolated ports: S1 reproduces ≥ 9/10 with the exact expected chain, rank 1 + `STRONG`, S2–S4 graphs, control, held-out S5/S6 mechanics, fault cleanup, gate |
+| Held-out experiment | predictions written before the code; graded mechanically in `docs/experiments/results.md`; one defect found (event-id collision) and fixed with a mutation-checked regression test |
 | Integrity | ground-truth leak into the ranker → 3 tests fail (mutation-checked) |
 | Conventions as tests | no `Date.now()`, no `causora.*` / header literals outside `contracts`, no direct bus-table access |
 | Clean-copy run | `npm install` (5 s) → `npm start` → seed → happy path → primary failure, from a copy with no `node_modules`, `data` or build output |
