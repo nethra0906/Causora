@@ -14,6 +14,8 @@ import { after, before, test } from 'node:test';
 const BASE = 14000 + Math.floor(Math.random() * 2000);
 const API = `http://127.0.0.1:${BASE}`;
 const dataDir = mkdtempSync(join(tmpdir(), 'causora-e2e-'));
+/** Known token so a test can drive the (triple-gated) fault API directly. */
+const FAULT_TOKEN = 'e2e-fault-token-0123456789abcdef';
 let stack: ChildProcess;
 
 const json = async (path: string, init?: RequestInit) => {
@@ -29,7 +31,7 @@ const runScenario = async (scenarioId: string, count: number) => {
 
 before(async () => {
   stack = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'scripts/stack.ts', '--fresh'], {
-    env: { ...process.env, CAUSORA_PORT_BASE: String(BASE), CAUSORA_DATA_DIR: dataDir, NODE_ENV: 'test' },
+    env: { ...process.env, CAUSORA_PORT_BASE: String(BASE), CAUSORA_DATA_DIR: dataDir, NODE_ENV: 'test', CAUSORA_FAULT_TOKEN: FAULT_TOKEN },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
@@ -145,8 +147,13 @@ test('the other scenarios: each produces its failure, an asserted graph, and ran
       GRAPH_ASSERTIONS[id]!(g, new Map<string, any>(g.nodes.map((n: any) => [n.event_id, n])));
       assert.equal(g.edges.filter((e: any) => e.evidence_class === 'inferred').length, 0, `${id}: no inferred edges when the contract is honoured`);
       const { investigation } = await json(`/api/v1/failures/${run.failureEventId}/investigation`);
-      assert.equal(investigation.candidates[0].service, service, id);
-      assert.equal(investigation.candidates[0].operation, operation, id);
+      // On failure, say WHY: the top candidates with their latency evidence, so a CI log is diagnosable.
+      const why = investigation.candidates.slice(0, 3).map((c: any) => {
+        const l = c.evidence.anomaly_breakdown.latency;
+        return `${c.service}/${c.operation} anomaly=${c.anomaly.toFixed(2)} self=${Math.round(l.exclusive_ms ?? -1)}ms p95=${Number(l.baseline_p95 ?? -1).toFixed(2)}ms`;
+      }).join(' | ');
+      assert.equal(investigation.candidates[0].service, service, `${id}: ${why}`);
+      assert.equal(investigation.candidates[0].operation, operation, `${id}: ${why}`);
     }
   }
 });
@@ -180,6 +187,43 @@ test('held-out S6 (deliberate rejection): reproduces INSUFFICIENT_STOCK with a f
     const reserve = g.nodes.filter((n: any) => n.operation === 'inventory.reserve');
     assert.ok(reserve.length >= 1 && reserve.every((n: any) => n.status === 'OK'), 'the rejecting handler looks perfectly healthy - that is the point of the scenario');
   }
+});
+
+// Regression for a real CI failure (docs/experiments/jitter-sensitivity.md): on a loaded runner a ~45 ms stall in a
+// HEALTHY upstream span scored as anomalous and, being upstream of the payment error, was promoted to rank 1.
+// Here the stall is injected deliberately (100 ms, well above the old ~45 ms trigger, below the 250 ms floor).
+test('noise floor: a 100 ms stall on a healthy upstream span does not hijack the ranking from the real fault', { timeout: 90_000 }, async () => {
+  const hdr = { 'content-type': 'application/json', 'x-causora-fault-token': FAULT_TOKEN };
+  const svc = { order: `http://127.0.0.1:${BASE + 101}`, inventory: `http://127.0.0.1:${BASE + 102}`, payment: `http://127.0.0.1:${BASE + 103}` };
+  const inject = (url: string, faults: unknown[]) => fetch(`${url}/internal/faults`, { method: 'POST', headers: hdr, body: JSON.stringify({ experimentId: 'e2e-jitter', ttlSeconds: 60, faults }) });
+  let orderId = '';
+  try {
+    assert.ok((await inject(svc.payment, [{ type: 'error_response', target: 'payment.authorize', status: 503, rate: 1 }])).ok);
+    assert.ok((await inject(svc.inventory, [{ type: 'handler_delay', target: 'inventory.reserve', ms: 100 }])).ok);
+    orderId = ((await (await fetch(`${svc.order}/orders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json()) as { orderId: string }).orderId;
+    const end = Date.now() + 20_000;
+    for (;;) {
+      const o = (await (await fetch(`${svc.order}/orders/${orderId}`)).json()) as any;
+      if (o.status === 'FAILED') break;
+      assert.ok(Date.now() < end, `order never failed (status ${o.status})`);
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  } finally {
+    for (const url of [svc.payment, svc.inventory]) await fetch(`${url}/internal/faults`, { method: 'DELETE', headers: { 'x-causora-fault-token': FAULT_TOKEN } });
+  }
+  // Wait on STATE: the failure is recorded and the investigation reports COMPLETE telemetry.
+  let top: any;
+  const deadline = Date.now() + 25_000;
+  for (;;) {
+    const failure = ((await json('/api/v1/failures')) as any[]).find((f) => f.business_operation_id === orderId);
+    if (failure) {
+      const inv = (await json(`/api/v1/failures/${failure.failure_event_id}/investigate`, { method: 'POST', body: '{}' })).investigation;
+      if (inv.completeness === 'COMPLETE') { top = inv.candidates[0]; break; }
+    }
+    assert.ok(Date.now() < deadline, 'investigation never became COMPLETE');
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  assert.equal(top.service, 'payment-service', `rank 1 was ${top.service}/${top.operation}; a 100 ms stall upstream must not outrank the real fault`);
 });
 
 test('faults are cleared after every run: a healthy order afterwards confirms', { timeout: 30_000 }, async () => {

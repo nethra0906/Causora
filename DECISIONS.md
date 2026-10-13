@@ -519,3 +519,36 @@ limitation (S6: the analyser abstains on a correct-but-undesired decision). It d
 fitted heuristics, because S5's origin is a leaf span with its own error; that remains a stated weakness.
 "Held-out" here means predicted-first and not tuned-after, not independent: one author wrote the app, the
 analyser and the scenarios.
+
+---
+
+<a id="adr-0019"></a>
+## ADR-0019: An absolute latency noise floor in the analyser
+
+**Context.** The first CI run failed an end-to-end test: in a scenario where only the payment service was broken,
+a healthy upstream inventory span ranked first. With sub-millisecond baselines and a 5 ms spread floor, a self-time
+of about 45 ms already saturates the latency score, and the frontier rule promotes the earliest anomalous ancestor,
+so one ordinary stall (GC pause, disk flush, CPU steal on a shared runner) hijacked the ranking. Measured: 0/3
+correct from a 40 ms stall upward. See `docs/experiments/jitter-sensitivity.md`.
+
+**Decision.** A span contributes **no latency anomaly** unless its self-time is at least
+`minLatencyAnomalyMs = 250`, regardless of its baseline. The constant is part of the config snapshot recorded with
+every investigation.
+
+**Alternatives rejected.**
+
+- *Retry or loosen the failing test.* Hides a real analyser defect and would have shipped a ranking that a 45 ms
+  hiccup can flip.
+- *Widen the z-score spread floor instead* (for example 5 ms to 25 ms). Still relative to a sub-millisecond baseline,
+  so it only moves the flip point to a few hundred milliseconds of z-score rather than stating plainly that small
+  absolute latencies are not evidence.
+- *Require several anomalous signals before a span is anomalous.* A larger redesign of the scoring model, not
+  justified by one failure mode.
+- *Do nothing and document it.* Rejected: the failure was reproducible and the fix is small.
+
+**Consequences.** Headline results, the heuristic ablation and the held-out verdicts are unchanged (identical before
+and after). Slowdowns under 250 ms are invisible to the analyser, which suits this system (1 s deadlines, faults of
+1.5 s or more) but not a latency-sensitive one. A real but unrelated stall above the floor would still mislead the
+frontier rule; that structural weakness is stated, not fixed. This is an analyser change made after the held-out
+experiment, justified as a defect fix under the ADR-0018 protocol. The cause of the stall on the CI runner itself was
+not reproduced; the diagnosis rests on the mechanism and a deliberate injection that reproduces the symptom.

@@ -1,6 +1,6 @@
 # Testing Strategy
 
-> **Build status - blueprint document.** Built with `node:test` (no Vitest, Testcontainers or Playwright): 59 unit tests with no processes and 8 end-to-end tests that boot the real stack on isolated ports. Convention rules (no `Date.now()`, no contract literals outside `contracts`) are enforced as tests rather than ESLint rules. UI journeys were exercised manually in a browser, not by Playwright.
+> **Build status - blueprint document.** Built with `node:test` (no Vitest, Testcontainers or Playwright): 63 unit tests with no processes and 9 end-to-end tests that boot the real stack on isolated ports. Convention rules (no `Date.now()`, no contract literals outside `contracts`) are enforced as tests rather than ESLint rules. UI journeys were exercised manually in a browser, not by Playwright.
 
 A 4–6 week part-time budget cannot support exhaustive testing. It can support **testing
 concentrated where correctness actually matters**, which is a better answer anyway.

@@ -265,6 +265,12 @@ export interface AnalysisConfig {
   retryWindowMs: number;
   inferenceWindowMs: number;
   clockUncertaintyMs: number;
+  /**
+   * Absolute noise floor: a span whose self-time is below this contributes NO latency anomaly, whatever its
+   * baseline. Default 250 ms: about 5x the stall that flipped a ranking in the jitter probe, and far below
+   * every injected fault (>= 1.5 s). Cost: slowdowns smaller than this are invisible to the analyser.
+   */
+  minLatencyAnomalyMs: number;
   /** Heuristic H1: latency is self-time (duration minus child spans). Switched off ONLY to measure what it buys. */
   selfTimeLatency: boolean;
   /** Heuristic H2: a caller's error/timeout is attributed to its callee. Switched off ONLY to measure what it buys. */
@@ -287,6 +293,7 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   retryWindowMs: 30_000,
   inferenceWindowMs: 5_000,
   clockUncertaintyMs: 50,
+  minLatencyAnomalyMs: 250,
   selfTimeLatency: true,
   calleeErrorAttribution: true,
 };

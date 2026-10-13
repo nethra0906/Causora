@@ -26,7 +26,7 @@ The ordering principles held (contract before services → replay before rules �
 | M7 | Fault injection + scenarios | DONE | 3-gated fault API with TTL, scenario runner with `finally` cleanup, S1–S4 + control. |
 | M8 | Failure analysis | DONE | Scope, exclusive-time scoring, callee error attribution, Tarjan SCC, frontier, 5 patterns, ranking, evidence, labels, completeness. Integrity tests mutation-checked. |
 | M9 | Frontend | PARTIAL | Failures & Fault Lab, Investigation (React Flow + dagre, evidence panel, ablation selector, reveal toggle), Evaluation. CUT: timeline tab, concurrency lanes, trace/service explorers. |
-| M10 | Test hardening | PARTIAL | 59 unit + 8 e2e; a GitHub Actions workflow (typecheck, unit, docs, build, e2e) is written but **not yet run on GitHub**. CUT: Playwright, Testcontainers. |
+| M10 | Test hardening | PARTIAL | 63 unit + 9 e2e; a GitHub Actions workflow (typecheck, unit, docs, build, e2e) is written but **not yet run on GitHub**. CUT: Playwright, Testcontainers. |
 | M11 | Evaluation harness | DONE | Hit@1/Hit@3/MRR + 4 extra metrics over **40 headline runs**, no hand-entered numbers; plus 2 **held-out** scenarios (S5/S6) with pre-registered predictions graded mechanically (`docs/experiments/held-out.md`). CUT: the blueprint's S5–S7. |
 | M12 | Ablation study | DONE | 8 rule sets on identical stored events; results + caveats in `docs/experiments/results.md`. |
 | M13 | Benchmarks | PARTIAL | BM1 (ingest) and BM2 (investigation vs size) only. CUT: BM3–BM8. |
@@ -98,17 +98,24 @@ and not tuned after, not independent.
 |---|---|---|
 | Pre-registered prediction P6, confirmed by measurement | Redelivered messages shared one event id (`consume:<msg>:<group>`); all but the first delivery were discarded at ingest, so evidence of the redeliveries was lost. | `consumeEventId(..., delivery)`; `#n` suffix after the first delivery; unit test (fails with the old code). |
 | Reading the first held-out report | Grader passed Q3 on connectivity alone though the prediction claimed a wrong confident answer. | Stricter grader → "partly". |
+| **The first real CI run** (Linux, 2 vCPU) | The analyser was hypersensitive to noise: with sub-millisecond baselines and a 5 ms spread floor, a ~45 ms stall on a *healthy* upstream span scored as anomalous and, being upstream of the real fault, was promoted to rank 1 (`payment-error` ranked `inventory-service` first). Passed locally every time. Measured: 0/3 correct from a 40 ms stall up, before the fix. | Declared noise floor `minLatencyAnomalyMs = 250`; unit tests that pin defect and fix together; an end-to-end regression (mutation-checked, fails with the CI symptom when the floor is off); failure messages now print the top candidates. 3/3 correct up to 200 ms after. Full write-up: `docs/experiments/jitter-sensitivity.md`. **Not confirmed:** what stalled on the runner (I could not reproduce under CPU load or 2-core pinning). |
 
 **Wrap-up the same day.** (1) Added two config flags, default ON, and a **heuristic ablation** to the evaluation
 (`config.selfTimeLatency`, `config.calleeErrorAttribution`; a naive variant also baselines raw durations): the
 heuristics are necessary on exactly S2/S3 and irrelevant on S1/S4/S5/S6 - measured, in `docs/experiments/results.md`.
 Default behaviour and every cited number are unchanged (a unit test pins it). (2) Four unit tests pin what each
-flag does (59 unit total; `rules` 100%, `analysis` 98.5% line coverage). (3) `docs/DEMO.md` - a timed walkthrough
+flag does (`rules` 100%, `analysis` 98.5% line coverage; 63 unit tests after the later noise-floor fix). (3) `docs/DEMO.md` - a timed walkthrough
 script. (4) `.github/workflows/ci.yml` (typecheck, unit, docs, build, e2e) - **written, not yet run on GitHub**.
 (5) `npm run eval` now defaults to 10 runs per scenario, matching the 40 runs the docs cite (it was 8).
 
+**CI incident, same evening.** The first GitHub run failed one end-to-end test (see the bug table). I diagnosed it
+from the log, measured the failure threshold, added a latency noise floor to the analyser, and verified that the
+40-run headline table, the heuristic ablation and the held-out verdicts are **identical before and after**. This is an
+analyser change made after the held-out experiment; it is a defect fix under the ADR-0018 protocol and is reported as
+such (63 unit + 9 e2e tests now). Cost: slowdowns under 250 ms are invisible to the analyser.
+
 **Next.** Outside what I can do alone: have **someone else** run the quickstart (DoD 12); record the walkthrough
-(`docs/DEMO.md` is the script); push and confirm the CI workflow goes green. The one unvalidated claim - that the
+(`docs/DEMO.md` is the script); push and confirm the CI workflow goes green *after this fix*. The one unvalidated claim - that the
 two fitted heuristics generalise - needs a scenario written *without* having seen it fail; the ablation shows no
 current scenario provides that. Optional: Playwright, BM3+. The repository still has no commits (the user does git).
 

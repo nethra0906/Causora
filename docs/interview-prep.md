@@ -23,7 +23,7 @@ to the specific places the answer lives.
 | Investigation of a 2,000-node subgraph | **6.8 ms p50 / 11 ms p95** | same |
 | Failure → visible in the API | ≤ **338 ms** (5 runs); UI polls every 2 s | PROGRESS.md DoD #4 |
 | Whole stack footprint | **≈ 407 MB** across 5 Node processes | PROGRESS.md |
-| Tests | 59 unit (no processes) + 8 e2e (real stack); `rules` 100%, `analysis` 98.5% line coverage | `npm test`, `npm run test:e2e` |
+| Tests | 63 unit (no processes) + 9 e2e (real stack); `rules` 100%, `analysis` 98.5% line coverage | `npm test`, `npm run test:e2e` |
 | Held-out S5 (handler throws), predictions written first | **6 of 6 confirmed**; Hit@1 100%, `STRONG` ×10 | `docs/experiments/results.md`, `docs/experiments/held-out.md` |
 | Held-out S6 (deliberate rejection) | Hit@1 **0%**; the analyser returned **no candidate** (abstained); one prediction refuted, one partly | same |
 | What the two fitted heuristics buy | Switching either off drops **S2 and S3 from 100% to 0%** Hit@1 and changes **nothing** on S1/S4/S5/S6 - so they are needed on the scenarios they were fitted to, and **unvalidated elsewhere** | `docs/experiments/results.md`, section "What the two fitted heuristics buy" |
@@ -137,6 +137,15 @@ the full table). **Lead with this one - it is the cleanest story:**
   and the before/after runs are both kept in the repo. The same run also refuted a different prediction of
   mine (I expected the analyser to blame the wrong service on a deliberate rejection; it returned *nothing*), and
   I reported that too.
+
+- *CI caught what a fast laptop hid.* The first GitHub run failed one end-to-end test: the analyser ranked an
+  inventory span first in a scenario where only payment was broken. Cause: with sub-millisecond baselines and a 5 ms
+  spread floor, a ~45 ms stall in a *healthy* upstream span scores as anomalous, and because the frontier rule promotes
+  the earliest anomalous ancestor, that blip hijacked rank 1. I measured the flip point (0/3 correct from 40 ms up,
+  matching my analytic estimate of ~45 ms), added a 250 ms noise floor, and proved the fix with a regression test that
+  fails with the CI symptom when the floor is off. Be upfront about two things: **I never reproduced the CI failure
+  itself** (CPU load and 2-core pinning both passed), only its mechanism; and the fix has a cost, since **slowdowns under
+  250 ms are now invisible**. Details: `docs/experiments/jitter-sensitivity.md`.
 
 - *The runner swallowed a 400.* Fault cleanup sent `DELETE` with a JSON content-type and no body;
   Fastify rejected it and my `.catch(() => undefined)` hid it. Faults leaked between scenarios, so S2–S4

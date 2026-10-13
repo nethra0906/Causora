@@ -236,7 +236,11 @@ export function investigate(input: InvestigateInput): Investigation {
     if (available && excl !== null) {
       const spread = Math.max(b!.p95_ms - b!.p50_ms, cfg.minSpreadMs);
       z = (excl - b!.p95_ms) / spread;
-      latency = clamp(z / cfg.zSaturation, 0, 1);
+      // NOISE FLOOR: with sub-millisecond baselines a ~45 ms stall (GC pause, disk flush, CPU steal on a
+      // shared runner) already saturates the z-score. Because the frontier rule promotes the earliest anomalous
+      // ancestor, one such blip upstream of the real fault would hijack rank 1 (found by a CI failure; see
+      // docs/experiments/jitter-sensitivity.md). Below the floor, latency simply is not evidence.
+      if (excl >= cfg.minLatencyAnomalyMs) latency = clamp(z / cfg.zSaturation, 0, 1);
     }
     const error = ownError(e) ? 1 : 0;
     const totals = opTotals.get(opKey(e))!;

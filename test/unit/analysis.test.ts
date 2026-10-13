@@ -259,3 +259,43 @@ test('turning a heuristic off never changes the shipped default result (flags ar
   const explicit = investigate({ failureEventId: 'F', events, edges: deriveEdges(events, rs), baselines: healthyBaselines(events), ruleSetId: 'default', now: NOW, lastIngestAt: LAST, config: { ...DEFAULT_CONFIG } });
   assert.equal(JSON.stringify(base.candidates), JSON.stringify(explicit.candidates));
 });
+
+// ───────────────────────── noise floor: jitter on a healthy upstream span ─────────────────────────
+/** S3-shaped failure (payment returns an error) with a HEALTHY upstream reservation that merely stalled for `stallMs`. */
+function s3WithUpstreamStall(stallMs: number) {
+  return [
+    ev({ event_id: 'P', service: 'order-service', operation: 'order.publish_created', event_type: 'messaging.produce', occurred_at: T0, duration_ms: 1, topic: 'orders.events', message_key: 'ord_1' }),
+    ev({ event_id: 'C', service: 'inventory-service', operation: 'inventory.reserve', event_type: 'messaging.consume', occurred_at: T0 + 3, duration_ms: stallMs, causation_id: 'P', topic: 'orders.events', message_key: 'ord_1', dwell_ms: 2 }),
+    ev({ event_id: 'PR', service: 'inventory-service', operation: 'inventory.publish_reserved', event_type: 'messaging.produce', occurred_at: T0 + 3 + stallMs, duration_ms: 1, parent_span_id: 'span-C', causation_id: 'C', topic: 'inventory.events', message_key: 'ord_1' }),
+    ev({ event_id: 'RE', service: 'order-service', operation: 'order.on_inventory_reply', event_type: 'messaging.consume', occurred_at: T0 + 6 + stallMs, duration_ms: 1, causation_id: 'PR', topic: 'inventory.events', message_key: 'ord_1', dwell_ms: 2 }),
+    ev({ event_id: 'SET', service: 'order-service', operation: 'order.settle', event_type: 'domain.state_change', occurred_at: T0 + 1500 + stallMs, duration_ms: 20, causation_id: 'RE', status: 'ERROR', error_type: 'PAYMENT_FAILED' }),
+    ev({ event_id: 'H', service: 'order-service', operation: 'order.call_payment', event_type: 'http.client.request', occurred_at: T0 + 1501 + stallMs, duration_ms: 15, parent_span_id: 'span-SET', causation_id: 'SET', status: 'ERROR', error_type: 'HTTP_503' }),
+    ev({ event_id: 'S', service: 'payment-service', operation: 'payment.authorize', event_type: 'http.server.request', occurred_at: T0 + 1502 + stallMs, duration_ms: 5, parent_span_id: 'span-H', causation_id: 'H', status: 'ERROR', error_type: 'PROVIDER_UNAVAILABLE' }),
+    ev({ event_id: 'F', service: 'order-service', operation: 'order.failed', event_type: 'domain.state_change', occurred_at: T0 + 1520 + stallMs, duration_ms: 0, parent_span_id: 'span-SET', causation_id: 'S', status: 'ERROR', error_type: 'PAYMENT_FAILED' }),
+  ];
+}
+function topUnder(events: ReturnType<typeof s3WithUpstreamStall>, cfg: Partial<typeof DEFAULT_CONFIG>): string {
+  const inv = investigate({ failureEventId: 'F', events, edges: deriveEdges(events, getRuleSet('default')), baselines: healthyBaselines(events), ruleSetId: 'default', now: NOW, lastIngestAt: LAST, config: { ...DEFAULT_CONFIG, ...cfg } });
+  return inv.candidates[0]!.event_id;
+}
+
+test('NOISE FLOOR: a 60 ms stall on a healthy upstream span does not hijack the ranking from the real fault', () => {
+  const events = s3WithUpstreamStall(60);
+  assert.equal(topUnder(events, {}), 'S', 'the payment error stays the origin');
+});
+
+test('NOISE FLOOR (self-validating): with the floor disabled the same stall DOES hijack rank 1, which is the defect this fixes', () => {
+  const events = s3WithUpstreamStall(60);
+  assert.equal(topUnder(events, { minLatencyAnomalyMs: 0 }), 'C', 'without a floor, ordinary jitter upstream becomes the origin');
+});
+
+test('NOISE FLOOR: a genuinely large upstream stall is still detected as the origin', () => {
+  const events = s3WithUpstreamStall(1700);
+  assert.equal(topUnder(events, {}), 'C', 'a 1.7 s stall is far above the floor and is real evidence');
+});
+
+test('the floor is part of the recorded config, so an investigation can be reproduced', () => {
+  const events = s3WithUpstreamStall(60);
+  const inv = investigate({ failureEventId: 'F', events, edges: deriveEdges(events, getRuleSet('default')), baselines: healthyBaselines(events), ruleSetId: 'default', now: NOW, lastIngestAt: LAST });
+  assert.equal(inv.config_snapshot.minLatencyAnomalyMs, 250);
+});

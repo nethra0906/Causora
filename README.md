@@ -42,7 +42,7 @@ npm run demo:happy-path       # an order reaches CONFIRMED; 9 events, 9 proven e
 npm run demo:primary-failure  # inject S1, print the ranked investigation + evidence
 npm run eval                  # 40 scored runs × 8 rule sets → docs/experiments/results.md
 npm run bench                 # → docs/benchmarks/results.md
-npm test                      # 59 unit tests, no processes
+npm test                      # 63 unit tests, no processes
 npm run test:e2e              # boots the real stack on isolated ports (~40 s)
 npm run check:docs            # every path/symbol/test name/link cited in the docs resolves
 ```
@@ -227,7 +227,7 @@ analyser abstains, as above.)
 ```
 
 - **Pure core.** `normalise`, every edge rule and the whole analysis are pure functions: no I/O, no
-  clock, no randomness. That is why 59 unit tests need no containers, derivation is idempotent,
+  clock, no randomness. That is why 63 unit tests need no containers, derivation is idempotent,
   and **replay is just "derive again"** - the ablation is a config file, not a code path.
 - **Late and out-of-order telemetry is normal.** Derivation re-runs per business operation on every
   batch, so a consumer that arrives before its producer is linked the moment the producer lands.
@@ -259,6 +259,11 @@ are intact. The plumbing shrank:
 - **The analyser localises anomalies, not decisions.** A correct-but-undesired outcome (S6: an inventory
   rejection) leaves nothing anomalous upstream, so it returns *no candidate*. It abstains instead of guessing,
   but the user gets no answer.
+- **Noise floor.** The first CI run exposed that a ~45 ms stall in a healthy upstream span could outrank the real
+  fault (0/3 correct from 40 ms up; found and fixed, see
+  [docs/experiments/jitter-sensitivity.md](docs/experiments/jitter-sensitivity.md)). The fix is a 250 ms latency
+  floor, so **slowdowns smaller than 250 ms are invisible**, and a real-but-unrelated stall above it would still
+  mislead the frontier rule. I could not reproduce the CI failure itself, only its mechanism.
 - Two analysis heuristics were fitted after seeing S2/S3 fail. An ablation shows they are necessary on exactly
   those two scenarios and irrelevant elsewhere; **no scenario validates that they generalise.**
 - The bus is a **SQLite table**, not a distributed log: no partitions, no scale-out, single node.
@@ -275,8 +280,8 @@ are intact. The plumbing shrank:
 
 | | |
 |---|---|
-| Unit tests | **59**, no processes; `rules` **100%** and `analysis` **98.5%** line coverage (gate: 80%) |
-| End-to-end | **8**, real stack on isolated ports: S1 reproduces ≥ 9/10 with the exact expected chain, rank 1 + `STRONG`, S2–S4 graphs, control, held-out S5/S6 mechanics, fault cleanup, gate |
+| Unit tests | **63**, no processes; `rules` **100%** and `analysis` **98.5%** line coverage (gate: 80%) |
+| End-to-end | **9**, real stack on isolated ports: S1 reproduces ≥ 9/10 with the exact expected chain, rank 1 + `STRONG`, S2–S4 graphs, control, held-out S5/S6 mechanics, fault cleanup, gate |
 | Held-out experiment | predictions written before the code; graded mechanically in `docs/experiments/results.md`; one defect found (event-id collision) and fixed with a mutation-checked regression test |
 | Integrity | ground-truth leak into the ranker → 3 tests fail (mutation-checked) |
 | Conventions as tests | no `Date.now()`, no `causora.*` / header literals outside `contracts`, no direct bus-table access |

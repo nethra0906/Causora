@@ -1,6 +1,6 @@
 # Failure Analysis - the investigation algorithm
 
-> **Build status - blueprint document.** Implemented in `src/platform/analysis.ts`. Differences from this text: scope traversal is bounded in memory (not a recursive CTE); latency is **self-time** (duration minus child spans); a caller's error or timeout is **attributed to its callee** (`http.client.request` and `timeout.fired` carry no error signal of their own, and an error that bubbled up from a failing child is discounted); ranking lists frontier candidates first, then downstream effects; completeness has three states with explicit reasons; the ablation is evaluated on the same stored events.
+> **Build status - blueprint document.** Implemented in `src/platform/analysis.ts`. Differences from this text: scope traversal is bounded in memory (not a recursive CTE); latency is **self-time** (duration minus child spans); a caller's error or timeout is **attributed to its callee** (`http.client.request` and `timeout.fired` carry no error signal of their own, and an error that bubbled up from a failing child is discounted); ranking lists frontier candidates first, then downstream effects; completeness has three states with explicit reasons; a latency noise floor (`minLatencyAnomalyMs`, 250 ms; ADR-0019) means self-times below it are not evidence; the ablation is evaluated on the same stored events.
 
 Given a failure event, produce a ranked list of candidate origins with evidence. Eight
 stages. **Nothing here is machine learning and nothing here is causal inference** - it is a
