@@ -5,7 +5,7 @@
 **Hardware:** Intel(R) Core(TM) Ultra 5 225H · 14 logical cores · 15.4 GB RAM · win32 10.0.26300 · Node v24.17.0
 **Run at:** 2026-10-12T07:15:41.661Z · **Commit:** uncommitted · idle machine, dev stack stopped.
 
-## BM1 — Ingest → normalise → persist → derive edges
+## BM1 - Ingest → normalise → persist → derive edges
 
 Method: 30 ingest calls of ~280 spans each (20 primary-scenario operations per call, 8,400 spans total), in-process against a file-backed SQLite store in WAL mode (`synchronous=NORMAL`). Each call includes normalisation, idempotent persistence, and full re-derivation of the default rule set for every touched operation. Repeated 3× on fresh stores.
 
@@ -15,7 +15,7 @@ Method: 30 ingest calls of ~280 spans each (20 primary-scenario operations per c
 | Per-call latency p50 / p95 / p99 (ms, last repetition) | 11.1 / 22.2 / 23.6 |
 | Budget in ARCHITECTURE.md N2 | ≥ 2,000 events/s |
 
-## BM2 — Investigation latency vs ancestor-subgraph size
+## BM2 - Investigation latency vs ancestor-subgraph size
 
 Method: a 3-ary tree of ancestors feeding one failure (fan-in, depth within the bound of 12); 24 measured repetitions per size after one discarded warm-up; includes scope, anomaly scoring, SCC collapse, frontier, patterns, ranking and evidence assembly.
 

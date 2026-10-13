@@ -53,7 +53,7 @@ export function InvestigationPage({ failureId }: { failureId: string }) {
             <div>
               <h1>Investigation <span className="mono small">{investigation.business_operation_id}</span></h1>
               <p className="muted">
-                Most likely origin of the failure chain — presented as hypotheses with support, never as “the root cause”.
+                Most likely origin of the failure chain - presented as hypotheses with support, never as “the root cause”.
                 {' '}{investigation.subgraph_node_count} events and {investigation.subgraph_edge_count} edges in the ancestor subgraph · analysed in {investigation.duration_ms.toFixed(1)} ms.
               </p>
             </div>
@@ -74,7 +74,7 @@ export function InvestigationPage({ failureId }: { failureId: string }) {
 
           {activeRuleSet && ruleSet !== 'default' && (
             <div className="banner warn" role="status">
-              <strong>Ablation view — {activeRuleSet.title}.</strong> {activeRuleSet.description} The events are identical; only the contract fields the analyser may use differ. Compare with “Full contract” to see what that metadata was buying.
+              <strong>Ablation view - {activeRuleSet.title}.</strong> {activeRuleSet.description} The events are identical; only the contract fields the analyser may use differ. Compare with “Full contract” to see what that metadata was buying.
             </div>
           )}
           <div className={`banner comp-${investigation.completeness.toLowerCase()}`} role="status">
@@ -94,7 +94,7 @@ export function InvestigationPage({ failureId }: { failureId: string }) {
               {investigation.candidates.length === 0 && (
                 <div className="empty small">
                   <strong>No anomalous event found in the ancestor subgraph.</strong>
-                  <p>Either the causal links needed to reach the cause are missing under this rule set, or everything upstream behaved normally — for example a deliberate decision such as a stock rejection. Causora ranks anomalies; it cannot flag a correct-but-undesired decision, and it will not guess.</p>
+                  <p>Either the causal links needed to reach the cause are missing under this rule set, or everything upstream behaved normally - for example a deliberate decision such as a stock rejection. Causora ranks anomalies; it cannot flag a correct-but-undesired decision, and it will not guess.</p>
                 </div>
               )}
               <ol className="cands">
@@ -129,7 +129,7 @@ function Evidence({ c, name, onPick }: { c: Investigation['candidates'][number];
   const b = c.evidence.anomaly_breakdown;
   const bars: Array<[string, number, string]> = [
     ['latency', b.latency.contribution, b.latency.exclusive_ms === null ? 'n/a' : `${fmtMs(b.latency.exclusive_ms)} vs p95 ${fmtMs(b.latency.baseline_p95)}`],
-    ['error', b.error.contribution, b.error.discounted_for_callee_error ? 'explained by a failing callee — discounted' : b.error.status],
+    ['error', b.error.contribution, b.error.discounted_for_callee_error ? 'explained by a failing callee - discounted' : b.error.status],
     ['error rate', b.error_rate.contribution, `${(b.error_rate.observed * 100).toFixed(0)}% observed`],
     ['retries', b.retries.contribution, `${b.retries.descendant_retry_count} downstream`],
     ['dwell', b.dwell.contribution, b.dwell.dwell_ms === null ? 'n/a' : `${fmtMs(b.dwell.dwell_ms)} (cross-clock ±${b.dwell.clock_uncertainty_ms} ms)`],
@@ -168,7 +168,7 @@ function Evidence({ c, name, onPick }: { c: Investigation['candidates'][number];
       </div>
 
       {c.evidence.patterns.length > 0 && (<><h4>Patterns</h4><ul className="small">{[...new Set(c.evidence.patterns.map((p) => p.pattern))].map((p) => <li key={p}><span className="mono">{p}</span></li>)}</ul></>)}
-      {c.evidence.concurrent_with.length > 0 && (<><h4>Concurrent</h4><p className="small muted">No causal path either way with {c.evidence.concurrent_with.length} other event(s) — they ran in parallel, not in sequence.</p></>)}
+      {c.evidence.concurrent_with.length > 0 && (<><h4>Concurrent</h4><p className="small muted">No causal path either way with {c.evidence.concurrent_with.length} other event(s) - they ran in parallel, not in sequence.</p></>)}
       {c.evidence.caveats.length > 0 && (<><h4>Caveats</h4><ul className="caveats small">{c.evidence.caveats.map((x, i) => <li key={i}>{x}</li>)}</ul></>)}
     </div>
   );
@@ -186,7 +186,7 @@ function SelectionPanel({ selection, nodes, edges, name }: { selection: Selectio
             <div><span className={`chip cls-${e.evidence_class}`}>{CLASS_LABEL[e.evidence_class]}</span> <strong className="mono">{e.type}</strong> · <span className="muted">{e.derived_by_rule}</span></div>
             {e.evidence.matched_fields.map((m, i) => <div key={i} className="mono small kv">{m.field}: {m.from_value === m.to_value ? m.from_value : `${m.from_value} → ${m.to_value}`}</div>)}
             {e.evidence.notes && <div className="small muted">{e.evidence.notes}</div>}
-            {e.evidence_class === 'inferred' && <div className="small">Declared weight {e.confidence.toFixed(2)} — a label of evidence class, not a probability.</div>}
+            {e.evidence_class === 'inferred' && <div className="small">Declared weight {e.confidence.toFixed(2)} - a label of evidence class, not a probability.</div>}
           </div>
         ))}
       </div>

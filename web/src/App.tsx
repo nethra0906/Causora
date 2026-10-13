@@ -39,7 +39,7 @@ export function App() {
         <div className="pills" aria-label="Stack health">
           {health.data?.services.map((s) => (
             <span key={s.name} className={`pill ${s.up ? 'ok' : 'down'}`} title={s.up ? 'up' : 'down'}>
-              {s.up ? '●' : '○'} {s.name.replace('-service', '')}
+              {s.name.replace('-service', '')}: {s.up ? 'up' : 'down'}
             </span>
           ))}
           {health.error && <span className="pill down">platform unreachable</span>}

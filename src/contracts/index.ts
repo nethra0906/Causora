@@ -1,5 +1,5 @@
 /**
- * THE CAUSAL METADATA CONTRACT — single source of truth.
+ * THE CAUSAL METADATA CONTRACT - single source of truth.
  *
  * Every header name, span attribute name, event type and edge type used anywhere in Causora is
  * defined here and imported. Never write a `causora.*` string literal elsewhere: the ablation
@@ -221,7 +221,7 @@ export interface RuleSet {
   title: string;
   description: string;
   enabled: RuleId[];
-  /** Contract fields treated as ABSENT before any rule runs — this is how metadata loss is simulated. */
+  /** Contract fields treated as ABSENT before any rule runs - this is how metadata loss is simulated. */
   masked: ContractField[];
 }
 
@@ -377,7 +377,7 @@ export const TOPICS = { orders: 'orders.events', inventory: 'inventory.events' }
 export const GROUPS = { inventoryReserver: 'inventory-reserver', orderSaga: 'order-saga' } as const;
 
 /**
- * Deterministic id of "message M consumed by group G" — computable by anyone who knows M, which is
+ * Deterministic id of "message M consumed by group G" - computable by anyone who knows M, which is
  * what lets a timeout name the consumer it awaited before that consumer has run.
  *
  * The FIRST delivery keeps the bare id (that is the one a waiter can name). A REDELIVERY of the same

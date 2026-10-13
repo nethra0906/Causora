@@ -1,6 +1,6 @@
 # Database Design
 
-> **Build status — blueprint document.** Built on SQLite with a smaller schema: `events` (indexed columns plus a JSON document), `edges`, `business_operations`, `failures`, `investigations`, `baselines`, `experiment_runs`, `evaluation_runs` (see `src/platform/store.ts`). Not built: `raw_telemetry`, `event_correlations`, `patterns_detected`, partitioning. Replay is "derive edges again" from stored events.
+> **Build status - blueprint document.** Built on SQLite with a smaller schema: `events` (indexed columns plus a JSON document), `edges`, `business_operations`, `failures`, `investigations`, `baselines`, `experiment_runs`, `evaluation_runs` (see `src/platform/store.ts`). Not built: `raw_telemetry`, `event_correlations`, `patterns_detected`, partitioning. Replay is "derive edges again" from stored events.
 
 One PostgreSQL 16 instance, two databases: `app` (the system under study) and `causora` (the
 platform). Separate databases, not schemas, so the demo app's load and the platform's load are
@@ -9,7 +9,7 @@ visibly independent and either can be reset without the other.
 Rationale for Postgres-only: [ADR-0003](../../DECISIONS.md#adr-0003).
 
 Migrations: plain numbered SQL files in `infra/postgres/migrations/`, applied by a small
-runner on startup. No ORM-driven migrations — the schema is the design and it should be
+runner on startup. No ORM-driven migrations - the schema is the design and it should be
 readable as SQL.
 
 ---
@@ -99,7 +99,7 @@ CREATE TABLE payments (
 
 ## 2. `causora` database (the platform)
 
-### 2.1 Raw telemetry — durability and replay
+### 2.1 Raw telemetry - durability and replay
 
 ```sql
 CREATE TABLE raw_telemetry (
@@ -122,7 +122,7 @@ graph engine gets developed without re-running the demo every time.
 Retention: a `scripts/prune-raw.ts` job drops envelopes older than `RAW_RETENTION_HOURS`
 (default 24). Growth is the main storage cost and is measured in the benchmarks.
 
-### 2.2 Events — the nodes
+### 2.2 Events - the nodes
 
 ```sql
 CREATE TABLE events (
@@ -274,7 +274,7 @@ CREATE TABLE operation_baselines (
 );
 ```
 
-Baselines are computed **only from succeeded business operations** — see
+Baselines are computed **only from succeeded business operations** - see
 `causality-algorithm.md` §6.2. Including failed traffic would make the anomaly threshold drift
 toward the thing being detected.
 
@@ -321,7 +321,7 @@ CREATE TABLE patterns_detected (
 );
 ```
 
-### 2.7 Experiments — ground truth
+### 2.7 Experiments - ground truth
 
 ```sql
 CREATE TABLE fault_experiments (
@@ -367,7 +367,7 @@ Every row is produced by a real scenario run; none are written by hand.
 | edges | ~22 | ~45 |
 | raw_telemetry envelopes | ~4 | ~7 |
 
-A 200-order baseline seed is roughly 3,600 events and 18,000 correlation rows — trivial. A
+A 200-order baseline seed is roughly 3,600 events and 18,000 correlation rows - trivial. A
 retry-storm scenario producing 200 retries reaches ~7,000 events in one business operation,
 which is deliberately near the UI clustering threshold so the clustering behaviour is
 exercised rather than theoretical.

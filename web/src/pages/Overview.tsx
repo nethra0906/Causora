@@ -25,7 +25,7 @@ export function Overview({ health }: { health: Health | undefined }) {
   return (
     <div className="page">
       <section className="hero">
-        <h1>Find where a failure chain <em>started</em> — not where it surfaced.</h1>
+        <h1>Find where a failure chain <em>started</em> - not where it surfaced.</h1>
         <p>
           Causora ingests telemetry from three event-driven services, derives typed and evidenced causal edges between events, and ranks
           the most likely origin of a failure with the proof attached. Inject a fault below, then open the investigation.
@@ -40,7 +40,7 @@ export function Overview({ health }: { health: Health | undefined }) {
           <h2 id="lab">Fault Lab</h2>
           <div className="actions">
             <span className="muted small">
-              {baselineReady ? `Baseline ready · ${health?.baselines} operations from ${health?.baselineOps} healthy orders` : 'No baseline yet — latency can’t be judged without knowing what “normal” is.'}
+              {baselineReady ? `Baseline ready · ${health?.baselines} operations from ${health?.baselineOps} healthy orders` : 'No baseline yet - latency can’t be judged without knowing what “normal” is.'}
             </span>
             <button className={baselineReady ? 'ghost' : 'primary'} disabled={running} onClick={() => start(() => api.seed(40))}>
               {baselineReady ? 'Re-seed baseline' : 'Seed baseline (40 healthy orders)'}

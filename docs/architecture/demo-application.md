@@ -1,6 +1,6 @@
-# The Demo Application — the system under study
+# The Demo Application - the system under study
 
-> **Build status — blueprint document.** Timing differs from the figures below so a full evaluation takes seconds: deadline **1 s**, injected delay **1.7 s**, settle window **1.5 s** (the 5 s / 2 s ratio shown here would trigger *three* attempts, not two; see [ADR-0017](../../DECISIONS.md#adr-0017)). The "Kafka" bus is a SQLite-backed bus with Kafka-shaped semantics, and consumers handle messages concurrently, which is what makes the race real. Payment is called by the order service from a timer-driven settle step.
+> **Build status - blueprint document.** Timing differs from the figures below so a full evaluation takes seconds: deadline **1 s**, injected delay **1.7 s**, settle window **1.5 s** (the 5 s / 2 s ratio shown here would trigger *three* attempts, not two; see [ADR-0017](../../DECISIONS.md#adr-0017)). The "Kafka" bus is a SQLite-backed bus with Kafka-shaped semantics, and consumers handle messages concurrently, which is what makes the race real. Payment is called by the order service from a timer-driven settle step.
 
 Causora needs a distributed system that fails in interesting ways. This document specifies it.
 
@@ -64,7 +64,7 @@ what make the timeout edge **provable** rather than guessed.
 Payment Service (HTTP).
 
 **Scaling characteristics.** Stateless except for the watchdog. The watchdog must not run
-in two replicas without leader election — noted as a known single-replica constraint rather
+in two replicas without leader election - noted as a known single-replica constraint rather
 than solved, with the reasoning documented (`SELECT ... FOR UPDATE SKIP LOCKED` is the
 intended fix and is a good interview answer).
 
@@ -84,7 +84,7 @@ injected, and where the duplicate-work race lives.
 | `processed_messages` | `idempotency_key`, `message_id`, `reservation_id`, `processed_at` |
 
 `processed_messages` is the idempotency guard. **Its write placement is the deliberate bug
-that makes the primary scenario work** — see §3.
+that makes the primary scenario work** - see §3.
 
 **HTTP API**
 
@@ -120,7 +120,7 @@ is the boundary distributed tracing handles worst and Causora handles best.
 **Scaling characteristics.** Partitioned by `order_id` as the Kafka message key, so all
 events for one order land on one partition and are processed in order. This matters: it
 means the duplicate race is a *concurrency* race within one partition's consumer, not a
-cross-partition ordering artefact. Document that distinction — interviewers probe it.
+cross-partition ordering artefact. Document that distinction - interviewers probe it.
 
 ---
 
@@ -190,7 +190,7 @@ Total latency on a developer laptop: roughly 150–250 ms.
 
 ---
 
-## 3. The primary failure scenario — and why it is a *real* bug
+## 3. The primary failure scenario - and why it is a *real* bug
 
 **Fault injected:** `inventory.handler.delay = 5000ms` on the `order.created` consumer.
 
@@ -253,7 +253,7 @@ The Inventory handler does:
 4. insert processed_messages[K]     <- record
 ```
 
-That is a **check-then-act race with a non-atomic idempotency guard** — one of the most
+That is a **check-then-act race with a non-atomic idempotency guard** - one of the most
 common correctness bugs in real event-driven systems. The correct implementation inserts
 the idempotency record *first*, in the same transaction as the reservation, and relies on a
 unique-constraint violation to detect the duplicate. The demo ships the buggy version on

@@ -1,6 +1,6 @@
 /**
  * The edge-rule engine. Every rule is a PURE function over the events of one business operation:
- * no I/O, no clock, no randomness — so rules are unit-tested with no containers, derivation is
+ * no I/O, no clock, no randomness - so rules are unit-tested with no containers, derivation is
  * idempotent, and replay is just "derive again". Every edge carries the id of the rule that made it
  * and the field values that matched (the project's central claim: no edge without evidence).
  *

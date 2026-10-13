@@ -1,6 +1,6 @@
 # REST API Specification
 
-> **Build status — blueprint document.** The implemented surface is the subset in `src/platform/server.ts`: `POST /v1/spans`; `/api/v1/{health,rulesets,scenarios,baseline,failures,jobs/current}`; `failures/:id/{investigation,investigate}`; `operations/:id/{graph,events}`; `experiments/runs`; `baseline/seed`; `evaluation/{run,latest}`. Errors use RFC 7807 problem details. No auth, no SSE (the UI polls), no rate limiting; the server binds to loopback.
+> **Build status - blueprint document.** The implemented surface is the subset in `src/platform/server.ts`: `POST /v1/spans`; `/api/v1/{health,rulesets,scenarios,baseline,failures,jobs/current}`; `failures/:id/{investigation,investigate}`; `operations/:id/{graph,events}`; `experiments/runs`; `baseline/seed`; `evaluation/{run,latest}`. Errors use RFC 7807 problem details. No auth, no SSE (the UI polls), no rate limiting; the server binds to loopback.
 
 Base: `/api/v1`. All responses JSON. Errors follow RFC 7807 Problem Details.
 Request and response schemas are the Zod schemas in `packages/contracts/src/api/`; this
@@ -17,7 +17,7 @@ document is the human-readable view of them, and the schemas are authoritative.
 | `CAUSORA_READ_TOKEN` | all `GET` endpoints |
 | `CAUSORA_WRITE_TOKEN` | investigations |
 | `CAUSORA_INGEST_TOKEN` | `/v1/traces`, `/v1/logs` only |
-| `CAUSORA_EXPERIMENT_TOKEN` | `/experiments/*` only — separate on purpose |
+| `CAUSORA_EXPERIMENT_TOKEN` | `/experiments/*` only - separate on purpose |
 
 A single-user project does not need four tokens. It has four because **fault injection must
 not be reachable with a read token**, and demonstrating least-privilege separation costs
@@ -31,7 +31,7 @@ GET /api/v1/events?limit=50&cursor=eyJvIjoiMjAyNi0xMC0wOFQxMjowMDowMFoiLCJpIjoiZ
 ```
 
 The cursor is base64 of `{ occurred_at, event_id }`. Offset pagination over an
-append-heavy table skips and repeats rows as new events arrive — unacceptable in a tool whose
+append-heavy table skips and repeats rows as new events arrive - unacceptable in a tool whose
 job is not to mislead.
 
 **Time.** All timestamps RFC 3339 UTC with milliseconds. Range filters are
@@ -65,7 +65,7 @@ reads 600/min.
 
 ---
 
-## 1. Ingestion (OTLP receiver — not under `/api/v1`)
+## 1. Ingestion (OTLP receiver - not under `/api/v1`)
 
 | Method | Path | Notes |
 |---|---|---|
@@ -285,11 +285,11 @@ Investigation response (abridged):
 }
 ```
 
-The UI labels rank 1 **"Most likely origin of the failure chain"** — never "root cause".
+The UI labels rank 1 **"Most likely origin of the failure chain"** - never "root cause".
 
 ---
 
-## 6. Experiments (fault injection) — gated
+## 6. Experiments (fault injection) - gated
 
 All endpoints require `CAUSORA_EXPERIMENT_TOKEN` **and** `CAUSORA_ALLOW_FAULT_INJECTION=true`
 **and** `NODE_ENV !== 'production'`. Any gate unmet → `503` with
@@ -320,7 +320,7 @@ POST /api/v1/experiments/runs
 ```
 
 `groundTruth` is returned up front and stored. It is used by the evaluation harness and by the
-UI's "reveal answer" toggle — and it is **never** sent to the analysis pipeline.
+UI's "reveal answer" toggle - and it is **never** sent to the analysis pipeline.
 
 ---
 

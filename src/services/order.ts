@@ -1,8 +1,8 @@
 /**
- * Order Service — owns the order aggregate and orchestrates the saga:
+ * Order Service - owns the order aggregate and orchestrates the saga:
  *
- *   POST /orders → order.created ─▶ (inventory) ─▶ inventory.reserved → SETTLING → payment → CONFIRMED
- *                      ▲                                                                    └▶ FAILED
+ *   POST /orders → order.created ─> (inventory) ─> inventory.reserved → SETTLING → payment → CONFIRMED
+ *                      ^                                                                    └> FAILED
  *                      └── watchdog: no reply within the deadline → timeout.fired → retry (attempt+1)
  *
  * `saga.awaiting_event_id` and `saga.deadline_at` are what make the timeout edge PROVABLE: the

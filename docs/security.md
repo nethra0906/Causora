@@ -1,6 +1,6 @@
 # Security Design
 
-> **Build status — blueprint document.** Fault-injection gating is implemented as specified (opt-in flag, production refusal, ≥16-char token, loopback only). The ingest and read APIs have **no authentication** and bind to loopback; there is no Collector redaction layer, so the SDK hashes idempotency keys instead.
+> **Build status - blueprint document.** Fault-injection gating is implemented as specified (opt-in flag, production refusal, ≥16-char token, loopback only). The ingest and read APIs have **no authentication** and bind to loopback; there is no Collector redaction layer, so the SDK hashes idempotency keys instead.
 
 Causora has two unusual security properties: it **ingests telemetry that may contain sensitive
 data**, and it **ships a deliberate availability-destruction capability**. Both need designing,
@@ -95,7 +95,7 @@ attributes or log messages. Enforced by an ESLint rule banning a denylist of att
 patterns, and by code review of the instrumentation helpers in `packages/telemetry` (which are
 the only place attributes are set).
 
-**At the Collector** — the authoritative control, because it is one auditable place rather
+**At the Collector** - the authoritative control, because it is one auditable place rather
 than three services' worth of discipline:
 
 | Attribute | Action | Why |
@@ -116,7 +116,7 @@ stable hash answers perfectly while destroying the content. The same reasoning a
 `error_stack_digest` (a SHA-256 prefix), which is enough to group identical failures and
 insufficient to leak source paths. An attribute-key allowlist is applied before writing
 `attributes` JSONB, so an unexpected new attribute from a service upgrade cannot silently
-start persisting PII — unknown keys are dropped and counted.
+start persisting PII - unknown keys are dropped and counted.
 
 **At the API.** Hashed and dropped fields are never reconstructed; responses echo
 `idempotencyKeyHash`, never a key.
@@ -128,7 +128,7 @@ start persisting PII — unknown keys are dropped and counted.
 - **Every** inbound payload, query string and path parameter is parsed by a Zod schema from
   `packages/contracts`. Fastify's type provider makes an unvalidated route a compile error.
 - All SQL is parameterised. No string interpolation into SQL anywhere, including in the
-  recursive CTE — depth and limit are bound parameters. A CI grep rejects template literals
+  recursive CTE - depth and limit are bound parameters. A CI grep rejects template literals
   containing `SELECT`/`INSERT`/`UPDATE`/`DELETE`.
 - Enumerations (`status`, `evidenceClass`, `eventType`, `ruleSetId`, scenario ids) are Zod
   enums, so they cannot carry arbitrary strings into a query.
@@ -157,7 +157,7 @@ start persisting PII — unknown keys are dropped and counted.
 | Collector memory | `memory_limiter` at 75% | collector config |
 
 Separate connection pools for ingest and analysis is the control that prevents a heavy
-investigation from stalling telemetry intake — a self-inflicted outage in a tool whose job is
+investigation from stalling telemetry intake - a self-inflicted outage in a tool whose job is
 diagnosing outages.
 
 ---

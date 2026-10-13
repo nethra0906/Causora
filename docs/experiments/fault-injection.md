@@ -1,6 +1,6 @@
 # Fault Injection Design
 
-> **Build status — blueprint document.** Built: S1 (inventory delay → duplicate), S2 (payment latency), S3 (payment 503), S4 (retry exhaustion) and the `inventory-fix` control, plus two held-out scenarios, `inventory-crash` (handler throws) and `inventory-reject` (deliberate out-of-stock rejection), whose predictions are pre-registered in [held-out.md](../experiments/held-out.md). The app's S5/S6 are *not* the blueprint's S5–S7. Not built: crash-after and clock-offset scenarios (the clock-offset fault type exists, no scenario uses it) and the blueprint's S5–S7. Timing is scaled as described in the demo-application note. A fault `target` is the logical **operation name** (e.g. `inventory.reserve`), not a route.
+> **Build status - blueprint document.** Built: S1 (inventory delay → duplicate), S2 (payment latency), S3 (payment 503), S4 (retry exhaustion) and the `inventory-fix` control, plus two held-out scenarios, `inventory-crash` (handler throws) and `inventory-reject` (deliberate out-of-stock rejection), whose predictions are pre-registered in [held-out.md](../experiments/held-out.md). The app's S5/S6 are *not* the blueprint's S5–S7. Not built: crash-after and clock-offset scenarios (the clock-offset fault type exists, no scenario uses it) and the blueprint's S5–S7. Timing is scaled as described in the demo-application note. A fault `target` is the logical **operation name** (e.g. `inventory.reserve`), not a route.
 
 Fault injection serves two purposes, and the second one is the important one:
 
@@ -45,12 +45,12 @@ Properties, all deliberate:
 | `handler_delay` | start of a Kafka message handler | `await sleep(ms)` before the work, inside the span |
 | `http_latency` | HTTP route handler entry | `await sleep(ms)` before the handler body |
 | `error_response` | HTTP route handler entry | return the configured status, with `rate` sampling |
-| `crash_after` | after N handled messages | `process.exit(1)` — uncommitted offsets cause redelivery |
+| `crash_after` | after N handled messages | `process.exit(1)` - uncommitted offsets cause redelivery |
 | `clock_offset` | the service's time source | an injected `now()` shifted by `ms`; all timestamps shift |
 | `consumer_pause` | consumer loop | `consumer.pause()` for `ms`, which grows broker lag |
 | `duplicate_publish` | producer wrapper | publish the same message twice with distinct `message_id` |
 
-`clock_offset` requires that **no service calls `Date.now()` directly** — all time goes
+`clock_offset` requires that **no service calls `Date.now()` directly** - all time goes
 through an injected clock from `packages/telemetry`. Enforce with an ESLint rule
 (`no-restricted-globals`). This is the kind of constraint that is trivial on day one and
 miserable to add in week four.
@@ -83,7 +83,7 @@ interface ScenarioDefinition {
 `groundTruth.expectedEdges` doubles as the automated graph assertion and as the denominator
 for the graph-completeness metric. One declaration, two uses.
 
-### S1 — `delayed_inventory` ⭐ PRIMARY DEMO SCENARIO · MVP
+### S1 - `delayed_inventory` PRIMARY DEMO SCENARIO · MVP
 
 | | |
 |---|---|
@@ -98,10 +98,10 @@ for the graph-completeness metric. One declaration, two uses.
 
 **Why this is the primary scenario.** The symptom is four hops from the cause, in a different
 trace, after an intervening retry, with two concurrent operations that a waterfall renders
-misleadingly — every weakness of conventional tracing in one failure, with a genuinely
+misleadingly - every weakness of conventional tracing in one failure, with a genuinely
 realistic underlying bug.
 
-### S2 — `payment_timeout` · MVP
+### S2 - `payment_timeout` · MVP
 
 | | |
 |---|---|
@@ -111,7 +111,7 @@ realistic underlying bug.
 | **Expected analysis** | Rank 1 = payment authorise span, label `SUPPORTED` (no pattern bonus), pattern `TIMEOUT_CASCADE` if the retry also times out |
 | **Teaching value** | The classic orphaned-success: the client believes it failed, the server believes it succeeded. Causora shows both and shows they are concurrent, not ordered. |
 
-### S3 — `slow_consumer` · MVP
+### S3 - `slow_consumer` · MVP
 
 | | |
 |---|---|
@@ -122,7 +122,7 @@ realistic underlying bug.
 | **Expected analysis** | Pattern `SLOW_CONSUMER` with dwell evidence; `RETRY_STORM` once chains reach 3 |
 | **Teaching value** | Distinguishes *the operation was slow* from *the message waited*. Those have completely different fixes, and `dwell_ms` is the only way to tell them apart. Jaeger cannot show this at all. |
 
-### S4 — `consumer_crash` · post-MVP
+### S4 - `consumer_crash` · post-MVP
 
 | | |
 |---|---|
@@ -131,27 +131,27 @@ realistic underlying bug.
 | **Expected graph** | Two consume events, same `message_id`, distinct spans, `DUPLICATE_OF` derived |
 | **Teaching value** | At-least-once delivery is not a theoretical concern. Also exercises the ingestion gap while the service is down, which should surface as `PROVISIONAL` completeness. |
 
-### S5 — `retry_storm` · post-MVP
+### S5 - `retry_storm` · post-MVP
 
 | | |
 |---|---|
 | **Trigger** | `error_response` 503 at rate 1.0 on `payment-service`; `MAX_ATTEMPTS` raised to 8; 25 orders |
 | **Expected behaviour** | ~200 retry events |
 | **Expected graph** | Large retry clusters; tests `MAX_SUBGRAPH_NODES`, SCC collapse and UI clustering |
-| **Expected analysis** | Rank 1 must be the payment 503, **not** any of the 200 retries — this is the test of the "pattern bonus goes to the earliest member" rule |
+| **Expected analysis** | Rank 1 must be the payment 503, **not** any of the 200 retries - this is the test of the "pattern bonus goes to the earliest member" rule |
 | **Teaching value** | Scale and the correct handling of symptom-vs-cause under high fan-out. Also where performance bottlenecks will first appear. |
 
-### S6 — `clock_offset` · post-MVP
+### S6 - `clock_offset` · post-MVP
 
 | | |
 |---|---|
 | **Trigger** | `clock_offset` +1500 ms on `inventory-service`, plus the S1 delay |
 | **Expected behaviour** | Inventory timestamps are 1.5 s ahead; `dwell_ms` becomes nonsensical (possibly negative) |
-| **Expected graph** | **Identical proven edges to S1** — because proven edges never use wall clock |
+| **Expected graph** | **Identical proven edges to S1** - because proven edges never use wall clock |
 | **Expected analysis** | Same rank 1; `dwell` contribution zeroed and a caveat `"clock skew detected: dwell unreliable"` |
 | **Teaching value** | The payoff for the "time is evidence, not truth" design rule. This scenario is the proof that the rule was followed, and it is the best single answer to "how do you handle clock skew?" |
 
-### S7 — `inventory_fix` (control) · post-MVP
+### S7 - `inventory_fix` (control) · post-MVP
 
 Same fault as S1, but the Inventory Service runs the **correct** transactional idempotency
 guard (`INSERT processed_messages` first, in the same transaction, catching the unique
@@ -161,7 +161,7 @@ violation).
 |---|---|
 | **Expected behaviour** | Attempt 2 hits the unique constraint, emits `idempotency.hit`, publishes nothing new. One reservation. Payment succeeds. Order `CONFIRMED` despite the 5-second delay. |
 | **Expected graph** | Timeout and retry edges present; **no `DUPLICATE_OF` edge**; no failure |
-| **Teaching value** | The strongest beat in the whole demo. Same injected fault, correct idempotency implementation, no failure — and Causora's graph shows exactly which edge disappeared. It demonstrates that the tool is measuring something real about the system rather than rendering a fixed story. |
+| **Teaching value** | The strongest beat in the whole demo. Same injected fault, correct idempotency implementation, no failure - and Causora's graph shows exactly which edge disappeared. It demonstrates that the tool is measuring something real about the system rather than rendering a fixed story. |
 
 ---
 
@@ -172,10 +172,10 @@ violation).
 ```
 1. Create fault_experiments row with ground_truth. Status RUNNING.
 2. POST /internal/faults to each targeted service, with experimentId and TTL.
-3. Verify faults are active (GET /internal/faults) — fail loudly if not.
+3. Verify faults are active (GET /internal/faults) - fail loudly if not.
 4. Drive the workload against Order Service, recording the business operation ids.
 5. Wait for terminal order state, or scenario timeout.
-6. Clear all faults (and again in a finally block — never leave a fault active).
+6. Clear all faults (and again in a finally block - never leave a fault active).
 7. Wait for telemetry quiescence (completeness verdict leaves PROVISIONAL, max 15 s).
 8. For each failure found, POST /api/v1/investigations with the scenario's ruleSetId.
 9. Record business_operation_ids and investigation ids on the experiment. Status COMPLETE.
@@ -186,7 +186,7 @@ Step 6's `finally` block matters: an aborted scenario that leaves a 5-second del
 will make every subsequent demo mysteriously broken. Also enforced by the TTL, belt and braces.
 
 Step 7 matters because investigating before telemetry settles produces a `PROVISIONAL`
-verdict and an unstable ranking — which would make the evaluation noisy and the numbers wrong.
+verdict and an unstable ranking - which would make the evaluation noisy and the numbers wrong.
 
 ---
 

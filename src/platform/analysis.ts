@@ -121,7 +121,7 @@ export function stronglyConnected(nodes: string[], adj: Map<string, string[]>): 
 // ───────────────────────────── investigation ─────────────────────────────
 export interface InvestigateInput {
   failureEventId: string;
-  /** Identity of the operation, taken from the failure RECORD — never from the (possibly masked) event view. */
+  /** Identity of the operation, taken from the failure RECORD - never from the (possibly masked) event view. */
   businessOperationId?: string | null;
   /** The (possibly rule-set-masked) event view for ONE business operation. */
   events: NormalisedEvent[];
@@ -159,7 +159,7 @@ export function investigate(input: InvestigateInput): Investigation {
     (outgoing.get(e.from_event_id) ?? outgoing.set(e.from_event_id, []).get(e.from_event_id)!).push(e);
   }
 
-  // ── Stage 1: scope — reverse reachability, bounded, cycle-safe, best-confidence path per node ──
+  // ── Stage 1: scope - reverse reachability, bounded, cycle-safe, best-confidence path per node ──
   const reach = new Map<string, Reach>([[failure.event_id, { depth: 0, conf: 1, via: null }]]);
   let truncated = false;
   let wave = [failure.event_id];

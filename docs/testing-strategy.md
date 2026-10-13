@@ -1,6 +1,6 @@
 # Testing Strategy
 
-> **Build status — blueprint document.** Built with `node:test` (no Vitest, Testcontainers or Playwright): 59 unit tests with no processes and 8 end-to-end tests that boot the real stack on isolated ports. Convention rules (no `Date.now()`, no contract literals outside `contracts`) are enforced as tests rather than ESLint rules. UI journeys were exercised manually in a browser, not by Playwright.
+> **Build status - blueprint document.** Built with `node:test` (no Vitest, Testcontainers or Playwright): 59 unit tests with no processes and 8 end-to-end tests that boot the real stack on isolated ports. Convention rules (no `Date.now()`, no contract literals outside `contracts`) are enforced as tests rather than ESLint rules. UI journeys were exercised manually in a browser, not by Playwright.
 
 A 4–6 week part-time budget cannot support exhaustive testing. It can support **testing
 concentrated where correctness actually matters**, which is a better answer anyway.
@@ -20,11 +20,11 @@ Priority order: edge rules → analysis → the scenario E2E → everything else
 
 ---
 
-## 1. Unit tests — where the thinking is
+## 1. Unit tests - where the thinking is
 
 ### 1.1 Edge rules (highest value in the project)
 
-Nine rules, each tested against the in-memory `CorrelationLookup` — **no database, no
+Nine rules, each tested against the in-memory `CorrelationLookup` - **no database, no
 containers, millisecond feedback**. This is why the lookup port exists.
 
 Per rule: the positive case, each negative case, and the boundary. Specifically:
@@ -52,7 +52,7 @@ Per rule: the positive case, each negative case, and the boundary. Specifically:
 ### 1.2 Normalisation
 
 Pure function, tested against **committed OTLP fixtures captured from real runs** via the
-collector's file exporter — never hand-written OTLP, which diverges from what the SDK emits.
+collector's file exporter - never hand-written OTLP, which diverges from what the SDK emits.
 
 Cases: span → event; span event filtering; log below ERROR → not a node; log at ERROR with
 trace context → node; missing contract fields → recorded in `contract_violations`, event still
@@ -70,7 +70,7 @@ normalisations of the same input** (the property that makes replay safe).
 | `scope` | depth bound; node bound sets `truncated`; cycle guard terminates; `MIN_PATH_CONFIDENCE` prunes |
 | `patterns` | each of the six patterns, positive and negative; **bonus applied only to the causally earliest member** |
 
-**The two integrity tests** — these protect the project's central claim and must never be
+**The two integrity tests** - these protect the project's central claim and must never be
 deleted:
 
 ```ts
@@ -96,7 +96,7 @@ Payment, and the `FaultController` TTL behaviour (fake timers).
 
 ## 2. Integration tests (Testcontainers)
 
-Real Postgres and real Redpanda. No mocks at this layer — a mocked broker tests the mock.
+Real Postgres and real Redpanda. No mocks at this layer - a mocked broker tests the mock.
 
 | Area | Tests |
 |---|---|
@@ -130,7 +130,7 @@ The ingestion boundary and the API boundary are the contracts that matter.
 
 ---
 
-## 4. E2E scenario tests — the Definition-of-Done tests
+## 4. E2E scenario tests - the Definition-of-Done tests
 
 Full Compose stack. One test per scenario, using `packages/testkit` assertions.
 
@@ -179,7 +179,7 @@ it('inventory_fix: same fault, correct idempotency guard, no duplicate and no fa
 
 Flakiness policy: E2E tests wait on **state**, never on sleeps. `waitForCompleteness` polls the
 completeness verdict; `waitForTerminalOrder` polls order status. A scenario test containing a
-bare `sleep` is rejected in review — timing-based E2E tests in a system whose whole subject is
+bare `sleep` is rejected in review - timing-based E2E tests in a system whose whole subject is
 timing will flake forever.
 
 ---
@@ -205,7 +205,7 @@ The last two are the tests that would catch the bugs most likely to embarrass a 
 ## 6. Frontend tests
 
 **Component (Vitest + Testing Library).** Evidence class renders the correct line style *and*
-text label; `ConfidenceLabel` never renders a percentage (asserted by regex — this guards a
+text label; `ConfidenceLabel` never renders a percentage (asserted by regex - this guards a
 product principle in code); every empty and error state renders its copy; concurrent events
 render in separate lanes; `Caveats` renders when present and is visible without scrolling.
 
@@ -236,7 +236,7 @@ and asserting neither reaches `events`; `limit=10000` rejected; a SQL metacharac
 filter returns a normal empty result rather than an error; 5xx responses contain no stack
 trace.
 
-The end-to-end redaction test is the important one — unit-testing the collector config is not
+The end-to-end redaction test is the important one - unit-testing the collector config is not
 possible, and a redaction rule that silently stops matching is a privacy incident.
 
 ---

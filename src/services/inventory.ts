@@ -1,8 +1,8 @@
 /**
- * Inventory Service — where the primary fault is injected and where the duplicate-work race lives.
+ * Inventory Service - where the primary fault is injected and where the duplicate-work race lives.
  *
  * There is deliberately NO HTTP reservation endpoint: reservation happens only through the bus
- * consumer, which forces the primary causal chain across the broker boundary — the boundary that
+ * consumer, which forces the primary causal chain across the broker boundary - the boundary that
  * distributed tracing handles worst and Causora handles best.
  */
 import { join } from 'node:path';
@@ -70,7 +70,7 @@ export async function startInventoryService(port: number = PORTS.inventory): Pro
 
       // Held-out scenario S5: an injected exception. The consume span ends ERROR and the bus redelivers.
       if (faults.apply('error_response', 'inventory.reserve', span)) throw new Error('injected handler failure');
-      // Held-out scenario S6: treat stock as exhausted. The handler then REJECTS correctly and quickly —
+      // Held-out scenario S6: treat stock as exhausted. The handler then REJECTS correctly and quickly -
       // a deliberate decision, not an anomaly.
       const outOfStock = !!faults.apply('config', 'force_out_of_stock', span);
 
@@ -96,7 +96,7 @@ export async function startInventoryService(port: number = PORTS.inventory): Pro
       // A non-transactional check-then-act idempotency guard. The check happens BEFORE the slow
       // work and the record is written AFTER it, so a retry arriving inside that window passes the
       // check too and both attempts reserve stock. This is one of the most common real correctness
-      // bugs in event-driven systems; do not "fix" it here — the control variant above is the fix.
+      // bugs in event-driven systems; do not "fix" it here - the control variant above is the fix.
       const seen = key ? db.prepare('SELECT 1 FROM processed_messages WHERE idempotency_key = ?').get(key) : undefined; // CHECK
       if (seen) {
         emitEvent({ name: 'idempotency hit', operation: 'inventory.idempotency_hit', eventType: 'idempotency.hit', kind: 'internal', causationId: span.eventId });

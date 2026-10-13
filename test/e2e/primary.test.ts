@@ -107,7 +107,7 @@ test('control: the same fault with the corrected guard confirms the order and ha
     assert.equal(run.failureEventId, null);
     const g = await json(`/api/v1/operations/${run.operationId}/graph`);
     assert.equal(g.edges.filter((e: any) => e.type === 'DUPLICATE_OF').length, 0);
-    assert.ok(g.edges.some((e: any) => e.type === 'RETRY_OF'), 'the retry still happened — only the duplicate vanished');
+    assert.ok(g.edges.some((e: any) => e.type === 'RETRY_OF'), 'the retry still happened - only the duplicate vanished');
   }
 });
 
@@ -116,7 +116,7 @@ const GRAPH_ASSERTIONS: Record<string, (g: any, nodes: Map<string, any>) => void
   'payment-latency': (g, nodes) => {
     assert.ok(has(g.edges, 'payment.authorize', 'order.payment_wait.timeout', 'TIMED_OUT_WAITING_FOR', nodes), 'the timeout names the exact payment call it awaited');
     const srv = g.nodes.find((n: any) => n.operation === 'payment.authorize');
-    assert.equal(srv.status, 'OK', 'the server span finished later, successfully — the caller gave up, not the callee');
+    assert.equal(srv.status, 'OK', 'the server span finished later, successfully - the caller gave up, not the callee');
     assert.ok(srv.duration_ms > 1000);
   },
   'payment-error': (g, nodes) => {
@@ -151,7 +151,7 @@ test('the other scenarios: each produces its failure, an asserted graph, and ran
   }
 });
 
-// Held-out scenarios (docs/experiments/held-out.md). These tests pin down MECHANICS only — that each
+// Held-out scenarios (docs/experiments/held-out.md). These tests pin down MECHANICS only - that each
 // scenario reproduces and that its causal chain is wired as designed. They deliberately do NOT assert
 // the ranking or the redelivery behaviour: those are pre-registered predictions, graded by `npm run eval`.
 test('held-out S5 (handler throws): reproduces RETRY_EXHAUSTED with failing spans and provable timeouts', { timeout: 60_000 }, async () => {
@@ -178,7 +178,7 @@ test('held-out S6 (deliberate rejection): reproduces INSUFFICIENT_STOCK with a f
     assert.ok(has(g.edges, 'order.on_inventory_reply', 'order.failed', 'PARENT_OF', nodes));
     assert.equal(g.edges.filter((e: any) => e.evidence_class === 'inferred').length, 0);
     const reserve = g.nodes.filter((n: any) => n.operation === 'inventory.reserve');
-    assert.ok(reserve.length >= 1 && reserve.every((n: any) => n.status === 'OK'), 'the rejecting handler looks perfectly healthy — that is the point of the scenario');
+    assert.ok(reserve.length >= 1 && reserve.every((n: any) => n.status === 'OK'), 'the rejecting handler looks perfectly healthy - that is the point of the scenario');
   }
 });
 

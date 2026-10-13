@@ -1,6 +1,6 @@
 # Scalability Analysis
 
-> **Build status — blueprint document.** Unchanged: nothing in this document is implemented. The bus is a single-node SQLite table, not a partitioned log.
+> **Build status - blueprint document.** Unchanged: nothing in this document is implemented. The bus is a single-node SQLite table, not a partitioned log.
 
 **Nothing in this document is implemented at MVP.** Its purpose is to establish that the
 architecture has a credible growth path and that the limits are known rather than discovered
@@ -26,7 +26,7 @@ designed remedies**, and the benchmarking milestone measures where the real limi
 
 ## 2. Bottleneck analysis
 
-### B1 — Single worker event loop · **the first real limit**
+### B1 - Single worker event loop · **the first real limit**
 
 One Node process does normalisation, correlation, edge derivation and analysis. Normalisation
 is CPU-bound JSON/protobuf work; traversal is CPU-bound graph work.
@@ -37,20 +37,20 @@ problem).
 
 *Mitigations, in order:*
 
-1. `setImmediate` yielding in long loops — **implemented at MVP**, because without it the
+1. `setImmediate` yielding in long loops - **implemented at MVP**, because without it the
    retry-storm scenario triggers rebalances.
 2. Move analysis to `worker_threads`.
 3. Split the analysis consumer into its own process (the code is already a separate consumer
    group, so this is a deployment change, not a rewrite).
 4. Scale the pipeline consumer horizontally. **Safe because the Kafka message key is
    `business_operation_id`**, so all events for one saga land on one partition and one
-   consumer — correlation and re-derivation stay single-writer per saga without any
+   consumer - correlation and re-derivation stay single-writer per saga without any
    distributed coordination.
 
 Point 4 is the payoff of a partitioning decision made on day one for a different reason. Worth
 noting: it is the single most important scalability property of the design, and it was free.
 
-### B2 — `events` table growth
+### B2 - `events` table growth
 
 At 2,000 events/s a day is ~170M rows. Indexes alone exceed the useful working set.
 
@@ -59,15 +59,15 @@ At 2,000 events/s a day is ~170M rows. Indexes alone exceed the useful working s
 `DELETE`; then move `events` to ClickHouse keeping Postgres for investigations and metadata
 ([ADR-0003](../DECISIONS.md#adr-0003) names this as the intended evolution).
 
-### B3 — Correlation index write amplification
+### B3 - Correlation index write amplification
 
 3–8 rows per event, so 2,000 events/s is up to 16,000 index rows/s.
 
 *Mitigations:* batch inserts via `COPY` instead of multi-row `INSERT`; drop `key_type`s no rule
 consumes (measured, not guessed); eventually a Redis hash index for the hot keys with Postgres
-as the durable record — only if measurement justifies it.
+as the durable record - only if measurement justifies it.
 
-### B4 — Recursive CTE traversal
+### B4 - Recursive CTE traversal
 
 Depth 12 over a 5,000-node subgraph with a 7,000-event business operation. Postgres recursive
 CTEs do not stream; the whole working set materialises.
@@ -77,7 +77,7 @@ materialised `investigation_subgraphs` cache keyed on `(failure_event_id, rule_s
 then an in-memory graph for a hot business operation; then the Neo4j/Cypher comparison, which
 is a **benchmark** and not an assumption.
 
-### B5 — UI rendering
+### B5 - UI rendering
 
 React Flow degrades visibly above ~1,000 nodes.
 
@@ -85,18 +85,18 @@ React Flow degrades visibly above ~1,000 nodes.
 expansion on demand; canvas rendering instead of SVG if needed. The retry-storm scenario is
 the test case and must be run against the browser, not only the API.
 
-### B6 — Kafka / Redpanda
+### B6 - Kafka / Redpanda
 
 Not a bottleneck at this scale, and saying so is more useful than inventing a concern. The
 `causora.ingest` topic needs partitions ≥ the target worker count, keyed by
 `business_operation_id` for the single-writer property in B1.
 
-### B7 — Baseline recomputation
+### B7 - Baseline recomputation
 
 A full recompute every 60 s over the trailing window is O(events in window).
 
 *Mitigation:* incremental percentile sketches (t-digest) updated per event instead of
-recomputing. Mentioned because exact percentiles do not scale and approximate ones do — a
+recomputing. Mentioned because exact percentiles do not scale and approximate ones do - a
 reasonable thing to be able to discuss.
 
 ---
@@ -116,7 +116,7 @@ reasonable thing to be able to discuss.
 | Investigation | < 2 s p95 at 2,000 nodes | CTE + scoring |
 
 The collector batch timeout dominates end-to-end latency. Lowering it to 200 ms makes the demo
-feel instant at the cost of more, smaller requests — a knob worth exposing and worth
+feel instant at the cost of more, smaller requests - a knob worth exposing and worth
 mentioning, because "it takes 2 seconds to appear" has a one-line explanation.
 
 ---
@@ -166,14 +166,14 @@ A plausible evolution, for the "how would you productionise it?" conversation:
 1. **Storage split.** Events to ClickHouse (columnar, TTL, cheap scans); Postgres keeps
    investigations, experiments and baselines.
 2. **Stream processing.** Edge derivation as a Flink or Kafka Streams job keyed by
-   `business_operation_id` — the same single-writer property, with managed state and exactly-once
+   `business_operation_id` - the same single-writer property, with managed state and exactly-once
    sinks.
 3. **Multi-tenancy.** Tenant id on every row, row-level security, per-tenant rate limits, and
    the hard part: telemetry crosses team boundaries, so authorisation on traces is genuinely
    harder than on application data.
 4. **Sampling with causal awareness.** The real research problem. Head sampling destroys causal
    chains. Tail sampling that retains any trace in a business operation containing an error
-   preserves them — at the cost of buffering until the operation completes. Quantifying that
+   preserves them - at the cost of buffering until the operation completes. Quantifying that
    trade-off is the research direction in `docs/experiments/research.md`.
 5. **Agent-side contract enforcement.** Ship the `packages/kafka` wrappers as an SDK so the
    contract is impossible to violate, and report compliance per service as a product feature.

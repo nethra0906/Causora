@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Build status — blueprint document.** This is the original ~82 h plan. The build followed its **ordering principles** (contract before services, replay before rules, fault injection before analysis) but collapsed M0–M9 into a three-day lightweight scope and pulled parts of M10–M13 forward (tests, evaluation, ablation, two benchmarks). [PROGRESS.md](PROGRESS.md) has the real milestone status.
+> **Build status - blueprint document.** This is the original ~82 h plan. The build followed its **ordering principles** (contract before services, replay before rules, fault injection before analysis) but collapsed M0–M9 into a three-day lightweight scope and pulled parts of M10–M13 forward (tests, evaluation, ablation, two benchmarks). [PROGRESS.md](PROGRESS.md) has the real milestone status.
 
 Build order, acceptance criteria and risks. Written for an implementation agent or engineer
 who has read [ARCHITECTURE.md](ARCHITECTURE.md) and the docs it links.
@@ -58,14 +58,14 @@ M15 Advanced (optional, open-ended)
 **1. Contracts and propagation packages before any service (M1 before M2).**
 The causal metadata contract is the project. Retrofitting header propagation into three
 services, two transports and an OTel pipeline after they exist is a multi-day rewrite and the
-most likely way this project goes wrong. Building `packages/kafka` first — with required
-parameters that make the contract impossible to omit — means every service is correct by
+most likely way this project goes wrong. Building `packages/kafka` first - with required
+parameters that make the contract impossible to omit - means every service is correct by
 construction from its first line.
 
 **2. Replay (M4) before the rules (M6).**
 Without replay, every rule iteration requires re-running the demo: ~90 seconds per change.
-With replay, it is a few seconds against recorded telemetry. Over M6 and M8 — the two longest
-and most iterative milestones — this is worth several hours and a great deal of patience.
+With replay, it is a few seconds against recorded telemetry. Over M6 and M8 - the two longest
+and most iterative milestones - this is worth several hours and a great deal of patience.
 
 **3. Fault injection (M7) before failure analysis (M8).**
 Analysis needs a real failure graph to develop against. Building the analyser first means
@@ -86,7 +86,7 @@ Each milestone ends with something that runs. There is no milestone whose delive
 
 ---
 
-### M0 — Foundation · 4 h
+### M0 - Foundation · 4 h
 
 **Objective.** A repository that builds, lints, types and tests on an empty codebase.
 
@@ -105,7 +105,7 @@ redpanda` is healthy.
 
 ---
 
-### M1 — Contracts, telemetry and messaging packages · 8 h · **CRITICAL PATH**
+### M1 - Contracts, telemetry and messaging packages · 8 h · **CRITICAL PATH**
 
 **Objective.** Make the causal metadata contract impossible to violate.
 
@@ -130,13 +130,13 @@ contract field survives a Kafka hop.
 2. Round-trip test: every contract header set by the producer is readable by the consumer.
 3. The ESLint rules actually fail on a violating file (test the rules, not just write them).
 
-**Risks.** `AsyncLocalStorage` context lost across KafkaJS callbacks — a real and well-known
+**Risks.** `AsyncLocalStorage` context lost across KafkaJS callbacks - a real and well-known
 trap. *Mitigation:* the round-trip test exists specifically to catch it; if context does not
 propagate, pass it explicitly through the wrapper rather than fighting the runtime.
 
 ---
 
-### M2 — Demo application, happy path · 10 h
+### M2 - Demo application, happy path · 10 h
 
 **Objective.** Three services completing an order saga.
 
@@ -160,7 +160,7 @@ no cancellation. The saga has exactly the steps in `docs/architecture/demo-appli
 
 ---
 
-### M3 — Observability pipeline · 6 h
+### M3 - Observability pipeline · 6 h
 
 **Objective.** Telemetry flowing, visible in Jaeger.
 
@@ -179,12 +179,12 @@ OTLP fixtures for M5 tests.
 4. `causora.idempotency_key` arrives **hashed**, not dropped.
 
 **Risks.** The Kafka hop does not link producer to consumer in Jaeger. *Mitigation:* that is
-expected and is partly the point — but verify the `traceparent` header is present; the
+expected and is partly the point - but verify the `traceparent` header is present; the
 `packages/kafka` wrapper is responsible for it.
 
 ---
 
-### M4 — Ingest, raw storage and replay · 7 h
+### M4 - Ingest, raw storage and replay · 7 h
 
 **Objective.** Telemetry durably captured and replayable. **This milestone pays for itself
 twice over in M6 and M8.**
@@ -210,7 +210,7 @@ trade-off as an ADR. Do not spend more than 90 minutes here.
 
 ---
 
-### M5 — Normalisation, correlation and persistence · 7 h
+### M5 - Normalisation, correlation and persistence · 7 h
 
 **Objective.** Raw telemetry becomes queryable events.
 
@@ -233,7 +233,7 @@ not negotiable; if a rule needs the database, it belongs in correlation or in a 
 
 ---
 
-### M6 — Edge rules · 9 h · **the intellectual core**
+### M6 - Edge rules · 9 h · **the intellectual core**
 
 **Objective.** A causal graph from real telemetry.
 
@@ -258,7 +258,7 @@ canonical ordering with a full tie-break chain, property-tested under input perm
 
 ---
 
-### M7 — Fault injection and the primary scenario · 6 h
+### M7 - Fault injection and the primary scenario · 6 h
 
 **Objective.** The primary failure, reproducibly, end to end.
 
@@ -278,13 +278,13 @@ S3 · the scenario runner with its `finally` cleanup · `POST /api/v1/experiment
 
 **Risks.** The duplicate race does not reproduce reliably. *Mitigation:* this is the highest
 scenario-level risk. The `SETTLING` window in the Order Service exists to make it deterministic.
-If it is still flaky, lengthen the injected delay relative to the deadline — a 5 s delay against
+If it is still flaky, lengthen the injected delay relative to the deadline - a 5 s delay against
 a 2 s deadline leaves a 3 s race window, which is generous. Verify reproducibility before M8
 begins; do not build the analyser on a flaky scenario.
 
 ---
 
-### M8 — Failure analysis · 11 h
+### M8 - Failure analysis · 11 h
 
 **Objective.** A ranked, evidenced investigation.
 
@@ -310,7 +310,7 @@ Tuning without the M11 evaluation harness is guesswork dressed as engineering; w
 
 ---
 
-### M9 — Frontend · 14 h
+### M9 - Frontend · 14 h
 
 **Objective.** The product.
 
@@ -328,7 +328,7 @@ the keyboard-navigable graph equivalent.
 4. Concurrent events render in parallel lanes.
 5. Reveal-fault defaults to off and does not change the ranking.
 6. The retry-storm scenario renders without freezing the browser.
-7. Every empty and error state has written copy — no blank panels.
+7. Every empty and error state has written copy - no blank panels.
 
 **Risks.** Graph layout consumes the entire milestone. *Mitigation:* use `dagre` layered output
 as-is; add only the concurrency-lane post-pass. Hand-tuned layout is a bottomless pit. Timebox
@@ -336,7 +336,7 @@ layout polish to 2 hours.
 
 ---
 
-## ═══ MVP CUTOFF — ~82 h ═══
+## ═══ MVP CUTOFF - ~82 h ═══
 
 At this point the project satisfies the MVP Definition of Done and is demonstrable,
 defensible and complete. Everything below increases its value; nothing below is required for it
@@ -344,31 +344,31 @@ to be a finished thing.
 
 ---
 
-### M10 — Test hardening · 8 h
+### M10 - Test hardening · 8 h
 Fill coverage to the gates (rules ≥ 90%, analysis ≥ 85%). Add the concurrency tests, the
 Testcontainers integration suite, the E2E scenario assertions including the `inventory_fix`
 control, and the three Playwright journeys. Wire the full CI matrix.
 
-### M11 — Evaluation harness · 8 h
+### M11 - Evaluation harness · 8 h
 Scenarios S4–S7. `evaluation_results`, Hit@1/Hit@3/MRR/completeness, the evaluation endpoints,
 the run protocol with resets and quiescence waits. **Acceptance: ≥ 30 runs with reported mean
 and standard deviation, and no hand-entered numbers anywhere.**
 
-### M12 — Ablation study · 6 h
+### M12 - Ablation study · 6 h
 Define the seven rule sets, implement replay-based comparison on identical input, produce the
-results table, write up against the pre-registered hypotheses — **including any that are
+results table, write up against the pre-registered hypotheses - **including any that are
 disconfirmed**. Add the Evaluation screen.
 
-### M13 — Benchmarks · 8 h
+### M13 - Benchmarks · 8 h
 k6 scripts, `docker-compose.bench.yml`, BM1–BM7 to the stated protocol, results committed with
 hardware and spread. Optionally BM8 (Neo4j comparison) if time allows.
 
-### M14 — Documentation and polish · 8 h
+### M14 - Documentation and polish · 8 h
 README quickstart verified on a clean machine by someone else · architecture diagrams ·
 a recorded demo walkthrough · all ADRs completed · `docs/interview-prep.md` verified against
 real code paths · the project report if desired.
 
-### M15 — Advanced · open-ended
+### M15 - Advanced · open-ended
 Trace comparison against a healthy baseline · pending-edge resolution · the sampling experiment ·
 Trace and Service Explorer screens · counterfactual scenario pairs · Kubernetes manifests.
 
@@ -382,7 +382,7 @@ Apply in this order. Each is a real loss, named honestly.
 |---|---|---|---|
 | 1 | Cut scenarios S2 and S3 from M7; ship S1 only | 2 h | Breadth of demo; S1 alone still proves the thesis |
 | 2 | Cut the Timeline tab from M9; graph only | 3 h | Dwell-time visualisation; concurrency still shown in the graph |
-| 3 | Cut the two inferred rules from M6 | 2 h | **Blocks the ablation study later** — only take this if abandoning M12 |
+| 3 | Cut the two inferred rules from M6 | 2 h | **Blocks the ablation study later** - only take this if abandoning M12 |
 | 4 | Cut three of six patterns (keep `DUPLICATE_WORK`, `IDEMPOTENCY_FAILURE`, `SLOW_CONSUMER`) | 2 h | Analytical richness |
 | 5 | Cut the Fault Lab screen; run scenarios by CLI | 3 h | **The demo loses its closing beat.** Take this last. |
 | 6 | Cut Jaeger from Compose | 1 h | **The side-by-side comparison, the single best demo beat.** Do not take this. |
@@ -399,8 +399,8 @@ everything else is gone.
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | Contract retrofitted after services exist | Medium | **Severe** — multi-day rewrite | M1 strictly before M2; required parameters make omission a compile error |
-| R2 | The duplicate race does not reproduce reliably | Medium | **Severe** — the primary demo fails | Deterministic `SETTLING` window; verify 10/10 before M8; generous delay-to-deadline ratio |
+| R1 | Contract retrofitted after services exist | Medium | **Severe** - multi-day rewrite | M1 strictly before M2; required parameters make omission a compile error |
+| R2 | The duplicate race does not reproduce reliably | Medium | **Severe** - the primary demo fails | Deterministic `SETTLING` window; verify 10/10 before M8; generous delay-to-deadline ratio |
 | R3 | Scope creep into a fourth service or an eighth screen | **High** | High | The MVP Definition of Done is the contract. Anything not on it goes to M15. |
 | R4 | Graph layout consumes M9 | Medium | High | `dagre` as-is; layout polish timeboxed to 2 h |
 | R5 | `AsyncLocalStorage` context lost across Kafka callbacks | Medium | High | The M1 round-trip test exists to catch it on day one |
@@ -425,7 +425,7 @@ pointed at when a new idea arrives at week three.
 4. **Never commit a benchmark number that was not produced by a run**, and always attach the
    hardware block.
 5. **Never write a sleep into an E2E test.** Wait on state.
-6. **Update `PROGRESS.md` at the end of every session** — milestone, status, decisions, blockers.
+6. **Update `PROGRESS.md` at the end of every session** - milestone, status, decisions, blockers.
 7. **If a decision differs from this blueprint, write an ADR.** Divergence is fine; silent
    divergence is not.
 8. **Every edge must carry its `derived_by_rule` and matched field values.** An edge without

@@ -14,7 +14,7 @@ Use a browser window at least 1400 px wide: the Investigation graph is a tall ch
 
 ---
 
-## 1 · The problem (30 s) — Failures & Fault Lab page
+## 1 · The problem (30 s) - Failures & Fault Lab page
 
 > "In an event-driven system a failure surfaces far from its cause: a different service, a different trace,
 > after a retry, seconds later. A trace waterfall stops at the message broker. Causora's claim is that
@@ -28,7 +28,7 @@ Click **Seed baseline (40 healthy orders)**. *"That teaches it what normal looks
 Click **Inject & run** on **S1**. While the banner says *Running scenario…*:
 
 > "A delay in the inventory handler outlasts the order service's deadline, so the order service times out
-> and retries. The retry races a **non-atomic idempotency guard** — check, slow work, record — so both
+> and retries. The retry races a **non-atomic idempotency guard** - check, slow work, record - so both
 > attempts reserve stock. Payment then rejects the doubled quantity. That is a real, common bug, not a
 > staged error."
 
@@ -36,29 +36,29 @@ A row appears: **Payment rejected** → origin `inventory / inventory.reserve`, 
 
 > "The symptom is in the payment service. The origin it points to is two services and one retry away."
 
-## 3 · The evidence (90 s) — click the row
+## 3 · The evidence (90 s) - click the row
 
 - **Graph:** the highlighted path runs from the origin (badge **#1 / ORIGIN**) down to the red failure node.
-  *"Line style is the evidence class: solid is proven, dashed is derived, dotted is inferred — never colour alone."*
+  *"Line style is the evidence class: solid is proven, dashed is derived, dotted is inferred - never colour alone."*
 - Click an **edge**: it shows the **rule that created it** and the **actual field values that matched**.
   *"I don't ask you to trust me; you can check the claim."*
 - **Candidates → Evidence:** the path with every rule, the anomaly breakdown (1.71 s against a 0.83 ms p95
   baseline), the patterns `DUPLICATE_WORK`, `IDEMPOTENCY_FAILURE`, `TIMEOUT_CASCADE`, and the caveats.
 - Tick **Reveal injected fault**: the flask badge appears on the injected operation.
-  *"It doesn't change the ranking — the ranker never sees it. Ground truth and analysis are kept apart on
+  *"It doesn't change the ranking - the ranker never sees it. Ground truth and analysis are kept apart on
   purpose, so the evaluation isn't circular."*
 
-## 4 · What the metadata buys (45 s) — same page
+## 4 · What the metadata buys (45 s) - same page
 
 Open **Metadata available to the analyser** and choose **Tracing only (what a trace UI shows)**.
 
-> "Same events, same failure — but now the analyser may only use parent/child spans, which is what a trace
+> "Same events, same failure - but now the analyser may only use parent/child spans, which is what a trace
 > UI has. The chain shatters at the broker, there is no origin, and the page says the telemetry is degraded."
 
 Switch back to **Full contract**. Then choose **Without idempotency_key**: *"Localisation survives, but it
-can no longer diagnose the duplicate-reservation bug — each field earns its place differently."*
+can no longer diagnose the duplicate-reservation bug - each field earns its place differently."*
 
-## 5 · The experiment (45 s) — Evaluation page
+## 5 · The experiment (45 s) - Evaluation page
 
 Click **Run evaluation** (10 runs per scenario, about a minute) or show the last result.
 
@@ -70,7 +70,7 @@ Scroll to **Held-out scenarios**:
 
 > "I was worried two of my analysis heuristics were fitted to the scenarios I'd watched fail. So I wrote two
 > new scenarios *and my predictions for them* before implementing either, and froze the analyser. One
-> prediction was a real bug — redelivered messages colliding on an event id — which I then fixed. One I got
+> prediction was a real bug - redelivered messages colliding on an event id - which I then fixed. One I got
 > wrong: on a deliberate stock rejection I expected a wrong answer; the analyser returned *no candidate at all*.
 > That's a genuine limit: it finds anomalies, not correct-but-undesired decisions."
 

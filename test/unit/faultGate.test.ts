@@ -21,7 +21,7 @@ test('gate 2: NODE_ENV=production refuses even with the flag AND a valid token',
   if (!d.allowed) assert.equal(d.status, 403);
 });
 
-test('gate 3: a credential is mandatory — unset, short, wrong, or missing tokens are refused', () => {
+test('gate 3: a credential is mandatory - unset, short, wrong, or missing tokens are refused', () => {
   assert.equal(checkFaultGate({ ...good, CAUSORA_FAULT_TOKEN: undefined }, req).allowed, false);
   assert.equal(checkFaultGate({ ...good, CAUSORA_FAULT_TOKEN: 'short' }, { token: 'short', remoteAddress: '127.0.0.1' }).allowed, false, 'weak tokens are refused');
   const wrong = checkFaultGate(good, { ...req, token: 'b'.repeat(32) });

@@ -1,11 +1,11 @@
 # Progress
 
-Live implementation tracker. **Update at the end of every working session** — milestone
+Live implementation tracker. **Update at the end of every working session** - milestone
 status, decisions taken, blockers, and anything that diverged from the blueprint.
 
-Current phase: **Implemented and held-out-tested (three-day lightweight scope, ADR-0017/0018). Remaining: a second person running the quickstart, a recorded walkthrough, and items marked ✗/◐ below.**
+Current phase: **Implemented and held-out-tested (three-day lightweight scope, ADR-0017/0018). Remaining: a second person running the quickstart, a recorded walkthrough, and items marked NOT DONE/PARTIAL below.**
 
-Status key: ☐ not started · ◐ partly done / reduced scope · ☑ done · ⊘ deliberately descoped
+Status key: TODO = not started · PARTIAL = partly done / reduced scope · DONE = done · CUT = deliberately descoped · NOT DONE = open item
 
 ---
 
@@ -16,22 +16,22 @@ The ordering principles held (contract before services → replay before rules �
 
 | # | Milestone | Status | What exists / what was cut |
 |---|---|---|---|
-| M0 | Foundation | ◐ | Single npm package, native TS (no build step), `node:test`, strict `tsc` incl. `erasableSyntaxOnly`. ⊘ Turborepo/pnpm workspaces, ESLint/Prettier, GitHub Actions. |
-| M1 | Contracts + telemetry + bus | ☑ | `src/contracts`, `src/telemetry`, `src/bus`. Causal fields are **required parameters** of `publish()`; round-trip test proves every header survives a hop; convention rules enforced as tests. |
-| M2 | Demo application | ☑ | order / inventory / payment, saga with timeout + retry + settle window, deliberate check-then-act race (commented as intentional), corrected-guard control. |
-| M3 | Observability pipeline | ◐ | OTel-*shaped* tracer exporting batched JSON; SDK-side hashing of idempotency keys. ⊘ Collector, redaction processor, Jaeger, OTLP fixtures. |
-| M4 | Ingest + replay | ◐ | `POST /v1/spans` (zod-validated, RFC 7807 errors, idempotent). Replay = re-derivation from stored events. ⊘ raw-telemetry table, auth, rate limit, protobuf. |
-| M5 | Normalise + correlate + persist | ☑ | Pure `normalise()`; contract violations recorded, not thrown; late arrivals linked on re-derivation. ⊘ correlation-index table. |
-| M6 | Edge rules | ☑ | 9 rules, 8 rule sets (the ablation *is* configuration), property tests for self-loops/duplicates/inferred cap. |
-| M7 | Fault injection + scenarios | ☑ | 3-gated fault API with TTL, scenario runner with `finally` cleanup, S1–S4 + control. |
-| M8 | Failure analysis | ☑ | Scope, exclusive-time scoring, callee error attribution, Tarjan SCC, frontier, 5 patterns, ranking, evidence, labels, completeness. Integrity tests mutation-checked. |
-| M9 | Frontend | ◐ | Failures & Fault Lab, Investigation (React Flow + dagre, evidence panel, ablation selector, reveal toggle), Evaluation. ⊘ timeline tab, concurrency lanes, trace/service explorers. |
-| M10 | Test hardening | ◐ | 59 unit + 8 e2e; a GitHub Actions workflow (typecheck, unit, docs, build, e2e) is written but **not yet run on GitHub**. ⊘ Playwright, Testcontainers. |
-| M11 | Evaluation harness | ☑ | Hit@1/Hit@3/MRR + 4 extra metrics over **40 headline runs**, no hand-entered numbers; plus 2 **held-out** scenarios (S5/S6) with pre-registered predictions graded mechanically (`docs/experiments/held-out.md`). ⊘ the blueprint's S5–S7. |
-| M12 | Ablation study | ☑ | 8 rule sets on identical stored events; results + caveats in `docs/experiments/results.md`. |
-| M13 | Benchmarks | ◐ | BM1 (ingest) and BM2 (investigation vs size) only. ⊘ BM3–BM8. |
-| M14 | Documentation | ◐ | README, ADR-0017, build-status banners on blueprint docs, generated results, `docs/interview-prep.md` rewritten and mechanically checked (`npm run check:docs`), timed demo script (`docs/DEMO.md`). ✗ demo not recorded, ✗ quickstart not run by a second person. |
-| M15 | Advanced | ☐ | Not started. |
+| M0 | Foundation | PARTIAL | Single npm package, native TS (no build step), `node:test`, strict `tsc` incl. `erasableSyntaxOnly`. CUT: Turborepo/pnpm workspaces, ESLint/Prettier, GitHub Actions. |
+| M1 | Contracts + telemetry + bus | DONE | `src/contracts`, `src/telemetry`, `src/bus`. Causal fields are **required parameters** of `publish()`; round-trip test proves every header survives a hop; convention rules enforced as tests. |
+| M2 | Demo application | DONE | order / inventory / payment, saga with timeout + retry + settle window, deliberate check-then-act race (commented as intentional), corrected-guard control. |
+| M3 | Observability pipeline | PARTIAL | OTel-*shaped* tracer exporting batched JSON; SDK-side hashing of idempotency keys. CUT: Collector, redaction processor, Jaeger, OTLP fixtures. |
+| M4 | Ingest + replay | PARTIAL | `POST /v1/spans` (zod-validated, RFC 7807 errors, idempotent). Replay = re-derivation from stored events. CUT: raw-telemetry table, auth, rate limit, protobuf. |
+| M5 | Normalise + correlate + persist | DONE | Pure `normalise()`; contract violations recorded, not thrown; late arrivals linked on re-derivation. CUT: correlation-index table. |
+| M6 | Edge rules | DONE | 9 rules, 8 rule sets (the ablation *is* configuration), property tests for self-loops/duplicates/inferred cap. |
+| M7 | Fault injection + scenarios | DONE | 3-gated fault API with TTL, scenario runner with `finally` cleanup, S1–S4 + control. |
+| M8 | Failure analysis | DONE | Scope, exclusive-time scoring, callee error attribution, Tarjan SCC, frontier, 5 patterns, ranking, evidence, labels, completeness. Integrity tests mutation-checked. |
+| M9 | Frontend | PARTIAL | Failures & Fault Lab, Investigation (React Flow + dagre, evidence panel, ablation selector, reveal toggle), Evaluation. CUT: timeline tab, concurrency lanes, trace/service explorers. |
+| M10 | Test hardening | PARTIAL | 59 unit + 8 e2e; a GitHub Actions workflow (typecheck, unit, docs, build, e2e) is written but **not yet run on GitHub**. CUT: Playwright, Testcontainers. |
+| M11 | Evaluation harness | DONE | Hit@1/Hit@3/MRR + 4 extra metrics over **40 headline runs**, no hand-entered numbers; plus 2 **held-out** scenarios (S5/S6) with pre-registered predictions graded mechanically (`docs/experiments/held-out.md`). CUT: the blueprint's S5–S7. |
+| M12 | Ablation study | DONE | 8 rule sets on identical stored events; results + caveats in `docs/experiments/results.md`. |
+| M13 | Benchmarks | PARTIAL | BM1 (ingest) and BM2 (investigation vs size) only. CUT: BM3–BM8. |
+| M14 | Documentation | PARTIAL | README, ADR-0017, build-status banners on blueprint docs, generated results, `docs/interview-prep.md` rewritten and mechanically checked (`npm run check:docs`), timed demo script (`docs/DEMO.md`). NOT DONE: demo not recorded, NOT DONE: quickstart not run by a second person. |
+| M15 | Advanced | TODO | Not started. |
 
 ---
 
@@ -41,29 +41,29 @@ Tick only when verified, not when believed. Evidence in the right-hand column.
 
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 1 | One-command start on a clean checkout | ☑ *(replaced)* | `docker compose up` → `npm install && npm start`. Run from a copy with no `node_modules`/`data`/`dist`: install 5 s, UI auto-built, seed → happy path → primary failure all passed. |
-| 2 | `demo:happy-path` reaches `CONFIRMED`; Jaeger shows the trace | ◐ | CONFIRMED with 9 events / 9 proven edges. Jaeger ⊘ → in-app *tracing-only* view. |
-| 3 | `demo:primary-failure` produces the chain in ≥ 9/10 runs | ☑ | e2e asserts ≥ 9/10 with the exact chain; last evaluation: 10/10 S1 runs failed as designed. |
-| 4 | UI lists the failure within 5 s | ☑ | Measured: failure → listed by API 212–338 ms (5 runs); UI polls every 2 s ⇒ ≈ 2.3 s worst. |
-| 5 | Graph matches the expected chain, asserted by a test | ☑ | `test/e2e/primary.test.ts` (edge type + the operations connected, per run). |
-| 6 | Every edge exposes type, class, rule and matched values | ☑ | Asserted in unit and e2e tests; shown in the UI evidence panel. |
-| 7 | Rank 1 is the injected fault's service and operation | ☑ | e2e (attempt 1, `STRONG`, frontier); eval Hit@1 100% / "first instance" 100% over 40 runs. |
-| 8 | Fault Lab can re-run the scenario from the UI | ☑ | Verified by a real click in a browser: banner → run finished in 3.2 s → new failure row with the correct origin. **No automated UI test** (Playwright cut). |
-| 9 | No inferred/weak edge above its declared weight | ☑ | Property test + "inferred chain cannot outrank proven" test. |
-| 10 | `is_fault_injected` absent from ranking inputs | ☑ | 3 integrity tests; **mutation-checked**: leaking the fields into the scorer turned all 3 red. |
-| 11 | Coverage ≥ 80% on rules and analysis | ☑ | `src/platform/rules.ts` 100%, `src/platform/analysis.ts` 98.5% lines (branches 96% / 90%). |
-| 12 | Someone else followed the quickstart on a clean machine | ✗ | **Not done.** The author ran it from a clean copy only. |
+| 1 | One-command start on a clean checkout | DONE *(replaced)* | `docker compose up` → `npm install && npm start`. Run from a copy with no `node_modules`/`data`/`dist`: install 5 s, UI auto-built, seed → happy path → primary failure all passed. |
+| 2 | `demo:happy-path` reaches `CONFIRMED`; Jaeger shows the trace | PARTIAL | CONFIRMED with 9 events / 9 proven edges. Jaeger cut; replaced by the in-app *tracing-only* view. |
+| 3 | `demo:primary-failure` produces the chain in ≥ 9/10 runs | DONE | e2e asserts ≥ 9/10 with the exact chain; last evaluation: 10/10 S1 runs failed as designed. |
+| 4 | UI lists the failure within 5 s | DONE | Measured: failure → listed by API 212–338 ms (5 runs); UI polls every 2 s ⇒ ≈ 2.3 s worst. |
+| 5 | Graph matches the expected chain, asserted by a test | DONE | `test/e2e/primary.test.ts` (edge type + the operations connected, per run). |
+| 6 | Every edge exposes type, class, rule and matched values | DONE | Asserted in unit and e2e tests; shown in the UI evidence panel. |
+| 7 | Rank 1 is the injected fault's service and operation | DONE | e2e (attempt 1, `STRONG`, frontier); eval Hit@1 100% / "first instance" 100% over 40 runs. |
+| 8 | Fault Lab can re-run the scenario from the UI | DONE | Verified by a real click in a browser: banner → run finished in 3.2 s → new failure row with the correct origin. **No automated UI test** (Playwright cut). |
+| 9 | No inferred/weak edge above its declared weight | DONE | Property test + "inferred chain cannot outrank proven" test. |
+| 10 | `is_fault_injected` absent from ranking inputs | DONE | 3 integrity tests; **mutation-checked**: leaking the fields into the scorer turned all 3 red. |
+| 11 | Coverage ≥ 80% on rules and analysis | DONE | `src/platform/rules.ts` 100%, `src/platform/analysis.ts` 98.5% lines (branches 96% / 90%). |
+| 12 | Someone else followed the quickstart on a clean machine | NOT DONE | **Not done.** The author ran it from a clean copy only. |
 
 ## Project Definition of Done
 
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 13 | ≥ 4 scenarios, each with an automated graph assertion | ☑ | S1–S4 + control assert their full graph (`GRAPH_ASSERTIONS`); held-out S5/S6 assert their mechanics (not their rankings — those are pre-registered predictions). |
-| 14 | Hit@1 / Hit@3 / MRR over ≥ 30 runs | ☑ | 40 scored runs. |
-| 15 | Ablation with `causation_id` disabled | ☑ | Plus 6 more rule sets. |
-| 16 | Benchmarks with hardware, method, repetitions, percentiles | ◐ | BM1, BM2 only (`docs/benchmarks/results.md`). |
-| 17 | All ADRs complete with rationale and rejected alternatives | ☑ | ADR-0001…0018; superseded ones annotated; ADR-0017 includes rejected alternatives. |
-| 18 | `docs/interview-prep.md` verified against real code paths | ☑ | Rewritten (the blueprint version described Kafka, Postgres, the Collector, S6/S7, `setImmediate` yielding — none built). `npm run check:docs` resolves every path, "symbol in file" claim, quoted test name and relative link (README + interview-prep). It checks *references*, not the truth of every sentence — the prose was reviewed by hand against the code. |
+| 13 | ≥ 4 scenarios, each with an automated graph assertion | DONE | S1–S4 + control assert their full graph (`GRAPH_ASSERTIONS`); held-out S5/S6 assert their mechanics (not their rankings - those are pre-registered predictions). |
+| 14 | Hit@1 / Hit@3 / MRR over ≥ 30 runs | DONE | 40 scored runs. |
+| 15 | Ablation with `causation_id` disabled | DONE | Plus 6 more rule sets. |
+| 16 | Benchmarks with hardware, method, repetitions, percentiles | PARTIAL | BM1, BM2 only (`docs/benchmarks/results.md`). |
+| 17 | All ADRs complete with rationale and rejected alternatives | DONE | ADR-0001…0018; superseded ones annotated; ADR-0017 includes rejected alternatives. |
+| 18 | `docs/interview-prep.md` verified against real code paths | DONE | Rewritten (the blueprint version described Kafka, Postgres, the Collector, S6/S7, `setImmediate` yielding - none built). `npm run check:docs` resolves every path, "symbol in file" claim, quoted test name and relative link (README + interview-prep). It checks *references*, not the truth of every sentence - the prose was reviewed by hand against the code. |
 
 ---
 
@@ -71,13 +71,13 @@ Tick only when verified, not when believed. Evidence in the right-hand column.
 
 Newest first.
 
-### 2026-10-13 — Held-out experiment
+### 2026-10-13 - Held-out experiment
 
 **Done.** Wrote predictions for two new scenarios *before* implementing them (`docs/experiments/held-out.md`),
 froze the analyser, implemented S5 (`inventory-crash`) and S6 (`inventory-reject`), ran `npm run eval -- 10`, and
 let a grader that reads the numbers mark each prediction.
 
-**Result.** S5: **6 of 6 confirmed** (Hit@1 100%, `STRONG` ×10, tracing-only 0%, no-`awaited` 0%) — including
+**Result.** S5: **6 of 6 confirmed** (Hit@1 100%, `STRONG` ×10, tracing-only 0%, no-`awaited` 0%) - including
 P6, a *defect*: redeliveries collided on one event id (3.0 stored events/run, where 9 = all kept). S6: Hit@1
 0% as predicted, but **Q2 refuted in detail** (the analyser returned *no candidate*, not a wrong one) and Q3 only
 **partly** held. Cause: nothing upstream is anomalous and `order.failed` has no baseline, so its lone error
@@ -90,7 +90,7 @@ first delivery keeps the awaitable id, redeliveries get `#n`; regression test mu
 
 **Caveat I will not drop:** S5 does not exercise the two heuristics that were fitted after S2/S3, so it does
 **not** validate them. Measured later the same day: with either heuristic off, S1/S4/S5/S6 are unchanged and only
-S2 (self-time and callee attribution) and S3 (callee attribution) fall from 100% to 0% Hit@1 — the two scenarios
+S2 (self-time and callee attribution) and S3 (callee attribution) fall from 100% to 0% Hit@1 - the two scenarios
 they were fitted to. They are **necessary there; their generalisation is unvalidated.** "Held-out" = predicted first
 and not tuned after, not independent.
 
@@ -101,18 +101,18 @@ and not tuned after, not independent.
 
 **Wrap-up the same day.** (1) Added two config flags, default ON, and a **heuristic ablation** to the evaluation
 (`config.selfTimeLatency`, `config.calleeErrorAttribution`; a naive variant also baselines raw durations): the
-heuristics are necessary on exactly S2/S3 and irrelevant on S1/S4/S5/S6 — measured, in `docs/experiments/results.md`.
+heuristics are necessary on exactly S2/S3 and irrelevant on S1/S4/S5/S6 - measured, in `docs/experiments/results.md`.
 Default behaviour and every cited number are unchanged (a unit test pins it). (2) Four unit tests pin what each
-flag does (59 unit total; `rules` 100%, `analysis` 98.5% line coverage). (3) `docs/DEMO.md` — a timed walkthrough
-script. (4) `.github/workflows/ci.yml` (typecheck, unit, docs, build, e2e) — **written, not yet run on GitHub**.
+flag does (59 unit total; `rules` 100%, `analysis` 98.5% line coverage). (3) `docs/DEMO.md` - a timed walkthrough
+script. (4) `.github/workflows/ci.yml` (typecheck, unit, docs, build, e2e) - **written, not yet run on GitHub**.
 (5) `npm run eval` now defaults to 10 runs per scenario, matching the 40 runs the docs cite (it was 8).
 
 **Next.** Outside what I can do alone: have **someone else** run the quickstart (DoD 12); record the walkthrough
-(`docs/DEMO.md` is the script); push and confirm the CI workflow goes green. The one unvalidated claim — that the
-two fitted heuristics generalise — needs a scenario written *without* having seen it fail; the ablation shows no
+(`docs/DEMO.md` is the script); push and confirm the CI workflow goes green. The one unvalidated claim - that the
+two fitted heuristics generalise - needs a scenario written *without* having seen it fail; the ablation shows no
 current scenario provides that. Optional: Playwright, BM3+. The repository still has no commits (the user does git).
 
-### 2026-10-12 — Implementation (three-day scope)
+### 2026-10-12 - Implementation (three-day scope)
 
 **Decision.** Deadline 15 Oct, 16 GB, no GPU ⇒ cut the infrastructure, keep the idea. Node 24 provides
 `node:sqlite` and native TypeScript, which removed Docker, Redpanda, the Collector, Jaeger, Postgres and
@@ -125,7 +125,7 @@ store/engine/server → scenario runner/evaluation → CLI → unit tests → UI
 40-run ablation: tracing alone localises 0% of failures; `idempotency_key` buys the duplicate-bug diagnosis
 (100% → 0%) though not localisation. Numbers below are copied from generated files.
 
-**Bugs that verification caught — none were found by the first green test run.**
+**Bugs that verification caught - none were found by the first green test run.**
 
 | Found by | Bug | Fix |
 |---|---|---|
@@ -144,7 +144,7 @@ three attempts. (2) Async context survives the bus handler boundary (round-trip 
 (4) Four vs six weeks: moot.
 
 **Next, in priority order** *(superseded by the 2026-10-13 entry above: the held-out experiment is done).*
-1. Have someone else run the README quickstart on their machine (DoD 12) — the one remaining MVP item.
+1. Have someone else run the README quickstart on their machine (DoD 12) - the one remaining MVP item.
 2. Record a 2-minute walkthrough (S1 → investigation → switch to "tracing only").
 
 ---
@@ -203,4 +203,4 @@ Pre-fix snapshot: [results-before-redelivery-fix.md](docs/experiments/results-be
 | Scenario | Reproduced | Hit@1 (full contract) | Hit@1 (tracing only) | Predictions |
 |---|---|---|---|---|
 | S5 `inventory-crash` | 10/10 | 100% | 0% | 6 of 6 confirmed (P6 = a real defect, since fixed: 3.0 → 9.0 events/run) |
-| S6 `inventory-reject` | 10/10 | 0% (no candidate returned) | 0% | Q1 ✔, Q2 ✘ refuted in detail, Q3 partly, Q4 supported |
+| S6 `inventory-reject` | 10/10 | 0% (no candidate returned) | 0% | Q1 confirmed, Q2 refuted in detail, Q3 partly, Q4 supported |

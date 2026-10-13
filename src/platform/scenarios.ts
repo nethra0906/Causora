@@ -1,7 +1,7 @@
 /**
  * Fault scenarios and the runner that drives them. The runner is the ONLY component that knows the
  * ground truth: it injects the fault, records which service+operation it targeted, and the
- * evaluation harness later checks whether Causora's ranking — which never sees that record —
+ * evaluation harness later checks whether Causora's ranking - which never sees that record -
  * names the same place. Faults are always cleared in a `finally`, even when the runner throws.
  */
 import { HTTP_HEADERS, PORTS, TIMING } from '../contracts/index.ts';
@@ -24,7 +24,7 @@ export interface Scenario {
   expectedReason: string | null;
   control?: boolean;
   /**
-   * Written (with predictions) BEFORE it was implemented or run — docs/experiments/held-out.md. Reported
+   * Written (with predictions) BEFORE it was implemented or run - docs/experiments/held-out.md. Reported
    * separately from the headline evaluation, and the analyser is frozen with respect to it.
    */
   heldOut?: boolean;
@@ -35,7 +35,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'inventory-delay-duplicate',
     title: 'S1 · Slow inventory → timeout → retry → duplicate reservation',
     description: 'A delay inside the reservation handler outlasts the order deadline. The retry races the original through a non-atomic idempotency guard; both reserve stock, and payment rejects the doubled quantity.',
-    symptom: 'Payment fails with RESERVATION_AMOUNT_MISMATCH — a different service, a different trace, seconds later.',
+    symptom: 'Payment fails with RESERVATION_AMOUNT_MISMATCH - a different service, a different trace, seconds later.',
     faults: [{ service: 'inventory', faults: [{ type: 'handler_delay', target: 'inventory.reserve', ms: 1700 }] }],
     truth: { service: 'inventory-service', operation: 'inventory.reserve' },
     expectFailure: true,
@@ -75,7 +75,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'inventory-fix',
     title: 'Control · S1’s fault with the corrected idempotency guard',
     description: 'Identical fault to S1, but the guard writes its record in the same transaction as the reservation. The retry is suppressed, the order is confirmed, and exactly the DUPLICATE_OF edge disappears.',
-    symptom: 'No failure. The graph differs from S1 by one edge — that is the point.',
+    symptom: 'No failure. The graph differs from S1 by one edge - that is the point.',
     faults: [{ service: 'inventory', faults: [{ type: 'handler_delay', target: 'inventory.reserve', ms: 1700 }, { type: 'config', target: 'idempotency_guard', value: 'transactional' }] }],
     truth: null,
     expectFailure: false,
@@ -86,7 +86,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'inventory-crash',
     title: 'S5 · Inventory handler throws (held-out)',
     description: 'An exception inside the reservation handler. The bus redelivers up to three times, then dead-letters; no reply is ever published, so the order service times out, retries and gives up. Pre-registered predictions: docs/experiments/held-out.md.',
-    symptom: 'The order fails with RETRY_EXHAUSTED — the same symptom as S4, from a different cause (an error, not slowness).',
+    symptom: 'The order fails with RETRY_EXHAUSTED - the same symptom as S4, from a different cause (an error, not slowness).',
     faults: [{ service: 'inventory', faults: [{ type: 'error_response', target: 'inventory.reserve', rate: 1 }] }],
     truth: { service: 'inventory-service', operation: 'inventory.reserve' },
     expectFailure: true,
@@ -161,7 +161,7 @@ export async function clearAllFaults(): Promise<void> {
     }),
   );
   const failed = results.filter(Boolean);
-  if (failed.length) throw new Error(`could not clear faults — ${failed.join('; ')}`);
+  if (failed.length) throw new Error(`could not clear faults - ${failed.join('; ')}`);
 }
 
 export interface RunResult {

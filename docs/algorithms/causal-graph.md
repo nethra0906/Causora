@@ -1,4 +1,4 @@
-# The Causal Graph — node and edge model
+# The Causal Graph - node and edge model
 
 The heart of Causora. This document defines what the graph *is*; `causality-algorithm.md`
 defines how it is built.
@@ -20,7 +20,7 @@ Node categories as rendered:
 
 **Synthesised nodes** are created only by the analysis phase, are always marked
 `evidence_source = causora_analysis`, and always carry the member `event_id`s in their
-attributes. They are a presentation and ranking convenience — never a claim that an extra
+attributes. They are a presentation and ranking convenience - never a claim that an extra
 thing happened.
 
 ---
@@ -40,10 +40,10 @@ another. Edges live in the `edges` table, unique on `(from_event_id, to_event_id
 | `TIMED_OUT_WAITING_FOR` | `b.awaited_correlation_id == a.event_id`, `b.event_type == timeout.fired` | Proven | yes | 1.00 | yes |
 | `FAULT_AFFECTED` | `a.source == fault`, `b.experiment_id == a.experiment_id`, b within the fault window and on the targeted service+operation | Proven | yes | 1.00 | yes (eval only) |
 | `DUPLICATE_OF` | same `idempotency_key`, distinct `event_id`, both mutating, intervals overlap or are within `retry_window_ms`, distinct resource ids produced | Derived | yes | 0.90 | yes |
-| `SAME_BUSINESS_OP` | shared `business_operation_id` | Derived (grouping) | yes | n/a | **no** — scoping only |
+| `SAME_BUSINESS_OP` | shared `business_operation_id` | Derived (grouping) | yes | n/a | **no** - scoping only |
 | `LIKELY_TRIGGERED` | `causation_id` absent; matched by `(topic, message key, offset ordering)` and `produced_at` within window | Inferred | no | 0.45–0.75, computed | yes, weighted |
 | `LIKELY_RETRY_OF` | `retry_of_event_id` absent; same operation + same `idempotency_key` + increasing `attempt_number` | Inferred | no | 0.60 | yes, weighted |
-| `TEMPORAL_PROXIMITY` | same service, within `proximity_window_ms`, no other path exists | Weak | no | 0.10 | **no — never** |
+| `TEMPORAL_PROXIMITY` | same service, within `proximity_window_ms`, no other path exists | Weak | no | 0.10 | **no - never** |
 
 ### 2.2 Evidence classes and what they are allowed to do
 
@@ -85,7 +85,7 @@ CausalEdge {
 ```
 
 `derived_by_rule` is mandatory and versioned. Every edge in the UI can answer *which rule
-created you, and on what grounds* — and when a rule changes, old edges remain attributable.
+created you, and on what grounds* - and when a rule changes, old edges remain attributable.
 
 ### 2.4 On the word "confidence"
 
@@ -100,7 +100,7 @@ therefore render them as labels, not percentages:
 | 0.50–0.84 | **Inferred** |
 | below 0.50 | **Speculative** |
 
-Writing "87% likely" would be a lie. Writing "Derived — same idempotency key, overlapping
+Writing "87% likely" would be a lie. Writing "Derived - same idempotency key, overlapping
 intervals" is true and more useful. This is a documented product decision:
 [ADR-0006](../../DECISIONS.md#adr-0006).
 
@@ -108,7 +108,7 @@ intervals" is true and more useful. This is a documented product decision:
 
 ## 3. Graph shape and structural handling
 
-### 3.1 It is a DAG — mostly
+### 3.1 It is a DAG - mostly
 
 Proven edges always point forward in logical time, so the proven subgraph is acyclic by
 construction. Two things can introduce apparent cycles:
@@ -126,7 +126,7 @@ the kind of assumption that produces an infinite loop in a demo.
 ### 3.2 Concurrency
 
 Events with no directed path between them are **concurrent**. The UI must represent this
-honestly — parallel lanes, not a false vertical order. In the primary scenario, attempt 1
+honestly - parallel lanes, not a false vertical order. In the primary scenario, attempt 1
 and attempt 2 of the reservation are genuinely concurrent, and showing that is the whole
 insight. A timeline that implied attempt 1 finished before attempt 2 started would be wrong.
 
@@ -156,7 +156,7 @@ reason, and the UI says so. Silent truncation in a debugging tool is a correctne
 
 ---
 
-## 4. Worked example — the primary scenario graph
+## 4. Worked example - the primary scenario graph
 
 ```
             [fault.injected: inventory.handler.delay 5000ms]
@@ -195,6 +195,6 @@ reason, and the UI says so. Silent truncation in a debugging tool is a correctne
 ```
 
 Reading the graph backwards from the failure gives the propagation frontier at
-`inventory.reserve #1` — the first anomalous node with no anomalous ancestor. That is the
+`inventory.reserve #1` - the first anomalous node with no anomalous ancestor. That is the
 answer, and it is reached without the fault edge, which is exactly what makes the evaluation
 meaningful.

@@ -63,7 +63,7 @@ function bm1(): { events: number; seconds: number; eps: number; batchP50: number
     }
     const seconds = (performance.now() - t0) / 1000;
     const edges = store.counts().edges;
-    if (edges < ops * 10) throw new Error(`implausibly few edges (${edges}) — the benchmark is not exercising derivation`);
+    if (edges < ops * 10) throw new Error(`implausibly few edges (${edges}) - the benchmark is not exercising derivation`);
     store.close();
     rmSync(dir, { recursive: true, force: true });
     reps.push(events / seconds);
@@ -118,7 +118,7 @@ const md = `# Benchmark results (generated)
 **Hardware:** ${hw}
 **Run at:** ${new Date().toISOString()} · **Commit:** ${commit} · idle machine, dev stack stopped.
 
-## BM1 — Ingest → normalise → persist → derive edges
+## BM1 - Ingest → normalise → persist → derive edges
 
 Method: ${b1.batches} ingest calls of ~280 spans each (20 primary-scenario operations per call, ${b1.events.toLocaleString()} spans total), in-process against a file-backed SQLite store in WAL mode (\`synchronous=NORMAL\`). Each call includes normalisation, idempotent persistence, and full re-derivation of the default rule set for every touched operation. Repeated 3× on fresh stores.
 
@@ -128,7 +128,7 @@ Method: ${b1.batches} ingest calls of ~280 spans each (20 primary-scenario opera
 | Per-call latency p50 / p95 / p99 (ms, last repetition) | ${fmt(b1.batchP50, 1)} / ${fmt(b1.batchP95, 1)} / ${fmt(b1.batchP99, 1)} |
 | Budget in ARCHITECTURE.md N2 | ≥ 2,000 events/s |
 
-## BM2 — Investigation latency vs ancestor-subgraph size
+## BM2 - Investigation latency vs ancestor-subgraph size
 
 Method: a 3-ary tree of ancestors feeding one failure (fan-in, depth within the bound of 12); ${b2[0]!.reps} measured repetitions per size after one discarded warm-up; includes scope, anomaly scoring, SCC collapse, frontier, patterns, ranking and evidence assembly.
 

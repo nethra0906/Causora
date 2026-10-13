@@ -11,7 +11,7 @@ const NODE_H = 58;
 const CLASS_RANK = { proven: 3, derived: 2, inferred: 1, weak: 0 } as const;
 
 export const fmtMs = (ms: number | null | undefined): string => {
-  if (ms === null || ms === undefined) return '—';
+  if (ms === null || ms === undefined) return '-';
   if (ms < 1) return '<1 ms';
   if (ms >= 1000) return `${(ms / 1000).toFixed(2)} s`;
   return `${Math.round(ms)} ms`;
@@ -42,7 +42,7 @@ const EventNode = memo(function EventNode({ data }: NodeProps<Node<NodeData>>) {
         {data.rank !== null && <span className="badge rank">#{data.rank}</span>}
         {data.frontier && <span className="badge frontier">ORIGIN</span>}
         {data.isFailure && <span className="badge fail">FAILURE</span>}
-        {data.reveal && n.is_fault_injected && <span className="badge fault">⚗ INJECTED</span>}
+        {data.reveal && n.is_fault_injected && <span className="badge fault">INJECTED</span>}
       </div>
       <div className="gnode-op">{n.operation}{(n.attempt_number ?? 1) > 1 ? <span className="attempt"> · attempt {n.attempt_number}</span> : null}</div>
       <div className="gnode-sub">
@@ -165,9 +165,9 @@ export function GraphView(props: {
         <Controls showInteractive={false} />
       </ReactFlow>
       <div className="legend" aria-label="Edge legend">
-        <span><i className="line solid" /> proven — a field in the telemetry states it</span>
-        <span><i className="line dashed" /> derived — deterministic rule over proven facts</span>
-        <span><i className="line dotted" /> inferred — heuristic, capped at 0.75</span>
+        <span><i className="line solid" /> proven - a field in the telemetry states it</span>
+        <span><i className="line dashed" /> derived - deterministic rule over proven facts</span>
+        <span><i className="line dotted" /> inferred - heuristic, capped at 0.75</span>
       </div>
     </div>
   );

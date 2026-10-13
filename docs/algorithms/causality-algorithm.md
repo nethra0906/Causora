@@ -1,6 +1,6 @@
-# The Causality Algorithm — building the graph
+# The Causality Algorithm - building the graph
 
-> **Build status — blueprint document.** Implemented in `src/platform/{normalise,rules}.ts` as pure functions, with rule ids defined in `src/contracts`. Differences: there is no raw-telemetry table or correlation index; derivation re-runs per business operation on every batch (idempotent, handles late arrivals). `LIKELY_RETRY_OF` additionally requires a deadline firing in the same service, and an orphan-event inference branch exists for timer-driven spans.
+> **Build status - blueprint document.** Implemented in `src/platform/{normalise,rules}.ts` as pure functions, with rule ids defined in `src/contracts`. Differences: there is no raw-telemetry table or correlation index; derivation re-runs per business operation on every batch (idempotent, handles late arrivals). `LIKELY_RETRY_OF` additionally requires a deadline firing in the same service, and an orphan-event inference branch exists for timer-driven spans.
 
 How telemetry becomes a causal graph. Seven phases, each independently testable.
 
@@ -26,7 +26,7 @@ Graph ready for investigation
 
 ---
 
-## 1. Phase 1 — Ingest
+## 1. Phase 1 - Ingest
 
 **Where:** `platform/api/src/ingest`
 
@@ -57,16 +57,16 @@ POST /v1/logs
 `ON CONFLICT (event_id) DO NOTHING`; phase 4 writes edges with
 `ON CONFLICT (from_event_id, to_event_id, type) DO NOTHING`. Both are therefore safe to
 re-run any number of times. Offsets are committed only after the database transaction
-commits — at-least-once, never at-most-once.
+commits - at-least-once, never at-most-once.
 
 **Causora's own telemetry** goes to topic `causora.self` and is never fed into the graph.
 Otherwise the tool diagnoses itself diagnosing itself, which is funny exactly once.
 
 ---
 
-## 2. Phase 2 — Normalise
+## 2. Phase 2 - Normalise
 
-**Where:** `platform/worker/src/normalise` — **a pure function with no I/O.**
+**Where:** `platform/worker/src/normalise` - **a pure function with no I/O.**
 
 ```ts
 normalise(envelope: OtlpEnvelope): { events: NormalisedEvent[], rejected: RejectionRecord[] }
@@ -78,13 +78,13 @@ Rules are tabulated in `event-model.md` §6. Implementation requirements:
   `event_id` for span events is a **hash of stable inputs**, never a random UUID, so
   re-ingest produces identical ids.
 - Unit-tested against committed OTLP fixtures in `platform/worker/test/fixtures/otlp/`,
-  captured from real runs via a collector file exporter. Fixture-driven, not hand-written —
+  captured from real runs via a collector file exporter. Fixture-driven, not hand-written -
   hand-written OTLP diverges from reality.
 - Contract violations recorded, not thrown.
 
 ---
 
-## 3. Phase 3 — Correlate
+## 3. Phase 3 - Correlate
 
 **Where:** `platform/worker/src/correlate`
 
@@ -108,8 +108,8 @@ For each event, write rows into `event_correlations (event_id, key_type, key_val
 One event produces 3–8 rows. Indexed on `(key_type, key_value)`.
 
 This costs write amplification and buys O(log n) edge derivation. The trade is deliberate and
-is documented in [ADR-0009](../../DECISIONS.md#adr-0009). The alternative —
-deriving edges from `events` with multi-column indexes — was rejected because each rule would
+is documented in [ADR-0009](../../DECISIONS.md#adr-0009). The alternative -
+deriving edges from `events` with multi-column indexes - was rejected because each rule would
 need its own composite index and adding a rule would require a migration. With the index
 table, **a new rule needs no schema change**, which matters a lot for a 4-week build.
 
@@ -118,9 +118,9 @@ overview screen does not need to aggregate `events` on every page load.
 
 ---
 
-## 4. Phase 4 — Derive edges
+## 4. Phase 4 - Derive edges
 
-**Where:** `platform/worker/src/rules/` — the intellectual core.
+**Where:** `platform/worker/src/rules/` - the intellectual core.
 
 ### 4.1 Rule interface
 
@@ -225,7 +225,7 @@ confidence = 0.65  if exactly one candidate
 ```
 
 **Declining to guess is a feature.** A tool that emits a wrong edge is worse than one that
-says "I cannot prove this hop — `causation_id` was missing on 14 events."
+says "I cannot prove this hop - `causation_id` was missing on 14 events."
 
 ### 4.5 Execution
 
@@ -240,7 +240,7 @@ with prepared statements and a connection pool.
 
 ---
 
-## 5. Phase 5 — Out-of-order and late arrival
+## 5. Phase 5 - Out-of-order and late arrival
 
 Telemetry does not arrive in causal order. A consumer span routinely arrives before the
 producer span it references. Two strategies:
@@ -263,7 +263,7 @@ and roughly 60 lines of code.
 
 **Post-MVP: pending-edge resolution.** When a rule references a missing `event_id`, write
 `pending_edges (missing_event_id, source_event_id, rule_id)`. On ingest of an event, look up
-`pending_edges` by its id and resolve. O(1) amortised instead of periodic re-derivation —
+`pending_edges` by its id and resolve. O(1) amortised instead of periodic re-derivation -
 the right answer at scale, and unnecessary at MVP scale. Documented in
 [ADR-0010](../../DECISIONS.md#adr-0010) so the choice is visible rather than
 accidental.
@@ -276,7 +276,7 @@ the completeness assessment reports `missing_hop: B`. The UI draws a dashed gap 
 
 ---
 
-## 6. Phase 6 — Detect
+## 6. Phase 6 - Detect
 
 ### 6.1 Failure detection
 
@@ -289,7 +289,7 @@ on `(business_operation_id, event_id)`.
 
 `operation_baselines (service, operation, p50_ms, p95_ms, p99_ms, error_rate, sample_count,
 window_start, window_end)`, recomputed every 60 s over the trailing window from events whose
-business operation **succeeded** — healthy traffic only. Without this, "abnormally slow" has
+business operation **succeeded** - healthy traffic only. Without this, "abnormally slow" has
 no meaning and anomaly detection is hand-waving. A `scripts/seed-baseline.ts` run generates
 200 healthy orders so baselines exist before the first failure demo; the bootstrap problem is
 real and must be scripted, not improvised during a demo.
@@ -313,7 +313,7 @@ investigation is persuasive in a way a single score never is.
 
 ---
 
-## 7. Phase 7 — Completeness assessment
+## 7. Phase 7 - Completeness assessment
 
 Before an investigation is served, compute:
 
@@ -333,7 +333,7 @@ Completeness {
 | Verdict | When | UI |
 |---|---|---|
 | `COMPLETE` | `quiet_for_ms > QUIET_PERIOD` (2 s), no open intervals, no missing hops, no violations | green |
-| `PROVISIONAL` | still receiving events, or open intervals remain | amber, "still arriving — results may change" |
+| `PROVISIONAL` | still receiving events, or open intervals remain | amber, "still arriving - results may change" |
 | `DEGRADED` | contract violations or missing hops present | red, lists exactly which fields were missing on how many events |
 
 A result computed on incomplete data **must say so**. This is where most observability tools

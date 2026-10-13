@@ -1,12 +1,12 @@
-# Causora Platform — internal architecture
+# Causora Platform - internal architecture
 
-> **Build status — blueprint document.** Built as **one** platform process (ingest, normalise, derive, detect, analyse, REST, static UI) rather than API + worker; analysis is a pure function and can move to a worker thread without redesign. Storage is SQLite. See [ADR-0017](../../DECISIONS.md#adr-0017).
+> **Build status - blueprint document.** Built as **one** platform process (ingest, normalise, derive, detect, analyse, REST, static UI) rather than API + worker; analysis is a pure function and can move to a worker thread without redesign. Storage is SQLite. See [ADR-0017](../../DECISIONS.md#adr-0017).
 
 Two processes, clear module boundaries, no microservices.
 
 ---
 
-## 1. `platform/api` — Fastify
+## 1. `platform/api` - Fastify
 
 ```
 platform/api/src/
@@ -101,7 +101,7 @@ Node has one event loop per process, so concurrency here is explicit and bounded
 
 The `setImmediate` yielding detail is not optional. A 5,000-node traversal that blocks the
 loop for 400 ms will cause KafkaJS to miss its heartbeat and trigger a consumer-group
-rebalance mid-investigation — a bug that looks like a Kafka problem and is actually an event
+rebalance mid-investigation - a bug that looks like a Kafka problem and is actually an event
 loop problem. Worth knowing, worth testing, and an excellent thing to be able to explain.
 
 If analysis later outgrows this, the next step is `worker_threads` for `scope`/`frontier`,
@@ -122,7 +122,7 @@ then commit the Kafka offset
 
 Offset after commit, never before. That is at-least-once, and the `ON CONFLICT` clauses are
 what make at-least-once safe. This is precisely the property the demo app gets wrong on
-purpose — the platform gets it right, and the contrast is deliberate and worth pointing out
+purpose - the platform gets it right, and the contrast is deliberate and worth pointing out
 in the README.
 
 ---
@@ -145,7 +145,7 @@ platform/shared/src/
 ```
 
 Repositories return `packages/contracts` types. No raw rows escape the repository layer, and
-no SQL exists outside it — so the schema can change without touching the rules or the
+no SQL exists outside it - so the schema can change without touching the rules or the
 analysis code.
 
 `lookup/memory.ts` exists so that **all nine edge rules are unit-testable with no database
@@ -154,7 +154,7 @@ are where the thinking is.
 
 ---
 
-## 4. `packages/*` — the shared layer
+## 4. `packages/*` - the shared layer
 
 ### `packages/contracts`
 The single source of truth. Zod schemas for `NormalisedEvent`, `CausalEdge`, `Completeness`,
@@ -187,13 +187,13 @@ publish<T>(topic, { key, payload, causation, idempotencyKey, attempt })
 
 subscribe<T>(topic, groupId, handler)
 // extracts causal headers, opens the causal context, starts the consume span,
-// stamps causora.* attributes — all before the handler body runs
+// stamps causora.* attributes - all before the handler body runs
 ```
 
 Required fields are *required parameters*. A developer cannot forget `causation` because the
 code will not compile. **Enforcing the architectural contract in the type system rather than
 in a code-review checklist is the single most valuable engineering decision in the
-project** — and it is the honest answer to "how do you know your services are instrumented
+project** - and it is the honest answer to "how do you know your services are instrumented
 correctly?"
 
 ### `packages/testkit`

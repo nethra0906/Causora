@@ -24,8 +24,8 @@ with duration zero (or a derived interval).
 The decision and its consequences: [ADR-0004](../../DECISIONS.md#adr-0004).
 
 Trade-off accepted: an event carries both a point-in-time semantic (`occurred_at`) and an
-interval semantic (`started_at`/`ended_at`). This is slightly impure, but the alternative —
-two node types — doubles the graph model's complexity for no analytical gain.
+interval semantic (`started_at`/`ended_at`). This is slightly impure, but the alternative -
+two node types - doubles the graph model's complexity for no analytical gain.
 
 ---
 
@@ -64,7 +64,7 @@ experiment.
 ### 2.3 Span attributes (the Causora namespace)
 
 Every span emitted by a demo service carries these as OTel attributes, mirroring the
-transport headers. This is how the metadata reaches Causora — through the ordinary OTLP
+transport headers. This is how the metadata reaches Causora - through the ordinary OTLP
 pipeline, with no side channel.
 
 | Attribute | Required | Derivation |
@@ -154,22 +154,22 @@ NormalisedEvent {
 
 ### Field categories
 
-**Required** — `event_id`, `event_type`, `source`, `service`, `operation`, `occurred_at`,
+**Required** - `event_id`, `event_type`, `source`, `service`, `operation`, `occurred_at`,
 `clock_source`, `status`, `evidence_source`, `schema_version`, `attempt_number` (defaulted).
 An event missing any of these is rejected at ingest with a 422 and counted; it is never
 silently dropped.
 
-**Optional** — tracing and messaging fields, because fault and synthesised events legitimately
+**Optional** - tracing and messaging fields, because fault and synthesised events legitimately
 have none.
 
-**Contract-required** — `business_operation_id`, `causation_id` (on consumers),
+**Contract-required** - `business_operation_id`, `causation_id` (on consumers),
 `idempotency_key` (on mutations), `retry_of_event_id` (when retrying). These are optional in
 the *type* but required by the *contract*; their absence is recorded in `contract_violations`
 rather than rejected. That distinction is deliberate: it lets Causora ingest telemetry from an
 imperfectly instrumented service and then tell you exactly what it could not prove. It is also
 the mechanism the ablation experiment uses.
 
-**Derived** — `duration_ms`, `ingested_at`, `dwell_ms`, `is_fault_injected`,
+**Derived** - `duration_ms`, `ingested_at`, `dwell_ms`, `is_fault_injected`,
 `contract_violations`.
 
 ### Why each contract field exists
@@ -184,7 +184,7 @@ the mechanism the ablation experiment uses.
 | `produced_at` | Broker dwell time is invisible, and dwell is the primary symptom of a slow consumer. | Dwell is measurable (with declared cross-clock uncertainty). |
 | `experiment_id` | No ground truth; evaluation is impossible. | Hit@k and MRR can be computed. |
 
-### ⚠️ The integrity rule
+### The integrity rule
 
 `is_fault_injected` and `experiment_id` **must never be inputs to anomaly scoring or
 candidate ranking.** They exist solely to (a) label ground truth for evaluation and (b) draw

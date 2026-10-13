@@ -1,6 +1,6 @@
 # Observability Architecture
 
-> **Build status — blueprint document.** Not built: the OTel Collector, its redaction processor, Jaeger and OTLP/protobuf ingest. Built instead: a small OTel-shaped tracer (`src/telemetry`) exporting batched JSON to `POST /v1/spans`, with idempotency keys **hashed in the SDK**, and an in-app *tracing-only* rule set that stands in for the Jaeger comparison. See [ADR-0017](../../DECISIONS.md#adr-0017).
+> **Build status - blueprint document.** Not built: the OTel Collector, its redaction processor, Jaeger and OTLP/protobuf ingest. Built instead: a small OTel-shaped tracer (`src/telemetry`) exporting batched JSON to `POST /v1/spans`, with idempotency keys **hashed in the SDK**, and an in-app *tracing-only* rule set that stands in for the Jaeger comparison. See [ADR-0017](../../DECISIONS.md#adr-0017).
 
 How telemetry gets from the demo services into Causora, and why the pipeline looks like this.
 
@@ -98,7 +98,7 @@ needs to know that two events share a key, but never needs the key's value. Hash
 the analytical property and removes the sensitive content. The same reasoning applies to
 `enduser.id`. Being able to articulate that trade-off is a genuine privacy-engineering point.
 
-`retry_on_failure` means the Collector buffers if Causora is down — and because Causora's
+`retry_on_failure` means the Collector buffers if Causora is down - and because Causora's
 ingest is idempotent on `event_id`, the resulting duplicate delivery is harmless. The two
 decisions are connected by design.
 
@@ -108,13 +108,13 @@ decisions are connected by design.
 |---|---|
 | HTTP server/client | auto (`@opentelemetry/instrumentation-http`) + manual causal attributes |
 | Postgres | auto (`@opentelemetry/instrumentation-pg`); `db.statement` deleted at the Collector |
-| Kafka | `packages/kafka` wrappers — **manual**, because auto-instrumentation does not know about `causation_id` |
+| Kafka | `packages/kafka` wrappers - **manual**, because auto-instrumentation does not know about `causation_id` |
 | Domain operations | manual spans named `<entity>.<action>` (e.g. `inventory.reserve`) |
 | Saga steps | manual spans plus span events at each transition |
 | Logs | pino + OTel log bridge so `trace_id`/`span_id` are attached automatically |
 
 **Sampling: none at MVP (`AlwaysOnSampler`).** This is a deliberate, documented choice.
-Sampling destroys causal chains — a sampled-away producer span orphans its consumer, which is
+Sampling destroys causal chains - a sampled-away producer span orphans its consumer, which is
 exactly the failure Causora is meant to detect. The interesting consequence is that this
 becomes a post-MVP research question: *at what sampling rate does causal graph completeness
 collapse?* See `docs/experiments/research.md`.
@@ -132,7 +132,7 @@ domain.state_change     "order.status PENDING->FAILED"
 
 Follow OTel semantic conventions for `http.*`, `messaging.*` and `db.*`. Everything Causora
 adds lives under the `causora.*` prefix so the telemetry remains a valid, portable OTLP
-stream — it is readable by Jaeger, Tempo or anything else, with Causora's additions as extra
+stream - it is readable by Jaeger, Tempo or anything else, with Causora's additions as extra
 attributes. Causora is an additive consumer of standard telemetry, not a proprietary format.
 That is the correct position and should be stated in the README.
 

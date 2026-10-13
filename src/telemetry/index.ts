@@ -1,12 +1,12 @@
 /**
- * Causora telemetry SDK — a deliberately small, OTel-shaped tracer (see ADR-0017).
+ * Causora telemetry SDK - a deliberately small, OTel-shaped tracer (see ADR-0017).
  *
  * What it guarantees (this is the point of the package):
  *  - every span carries the causal contract as `causora.*` attributes, written ONLY via the
  *    constants in `contracts`;
  *  - causal fields are inherited from the enclosing span by default, so a developer has to opt
  *    OUT of causality rather than remember to opt in;
- *  - time comes from an injectable clock (so `clock_offset` faults are possible) — `Date.now()` is
+ *  - time comes from an injectable clock (so `clock_offset` faults are possible) - `Date.now()` is
  *    banned elsewhere (test/unit/conventions.test.ts enforces it).
  */
 import { AsyncLocalStorage } from 'node:async_hooks';

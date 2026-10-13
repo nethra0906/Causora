@@ -30,7 +30,7 @@ interface ActiveFault extends FaultSpec {
 
 /**
  * Faults live in memory only and expire by TTL. Applying a fault stamps the affected span with the
- * experiment id — that is how the injector becomes ground truth (and why `experiment_id` must never
+ * experiment id - that is how the injector becomes ground truth (and why `experiment_id` must never
  * reach the ranker; see RankableEvent).
  */
 export class FaultController {

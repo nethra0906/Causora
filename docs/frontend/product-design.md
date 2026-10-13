@@ -1,6 +1,6 @@
 # Frontend Product Design
 
-> **Build status — blueprint document.** Built screens: **Failures & Fault Lab** (merged), **Investigation** (graph, candidates, evidence, ablation selector, reveal toggle) and **Evaluation**. Not built: Trace explorer, Service explorer, timeline tab, concurrency lanes, SSE. Evidence class is encoded by line style **and** label, never colour alone.
+> **Build status - blueprint document.** Built screens: **Failures & Fault Lab** (merged), **Investigation** (graph, candidates, evidence, ablation selector, reveal toggle) and **Evaluation**. Not built: Trace explorer, Service explorer, timeline tab, concurrency lanes, SSE. Evidence class is encoded by line style **and** label, never colour alone.
 
 The UI is where Causora's position either lands or collapses. A graph that renders proven and
 guessed relationships identically would undo the entire architecture. **Evidence class must be
@@ -26,7 +26,7 @@ imported from `packages/contracts`.
 | Screen | Route | Purpose |
 |---|---|---|
 | Operation Explorer | `/operations`, `/operations/:id` | Browse business operations, succeeded and failed |
-| Trace Explorer | `/traces/:id` | Span waterfall — the deliberate point of comparison |
+| Trace Explorer | `/traces/:id` | Span waterfall - the deliberate point of comparison |
 | Service Explorer | `/services` | Dependency map, per-operation health, contract compliance |
 | Analytics | `/analytics` | Failure rates, pattern frequency, latency trends |
 | Evaluation | `/evaluation` | Hit@k, MRR, ablation comparison |
@@ -37,7 +37,7 @@ does not need.
 
 ---
 
-## 2. Overview — `/`
+## 2. Overview - `/`
 
 **Purpose.** Answer three questions in one screen: is anything failing, how much can Causora
 prove right now, and is a fault currently injected.
@@ -50,7 +50,7 @@ prove right now, and is a fault currently injected.
 +--------------------------------------------------------------------------+
 | Operations 214 | Succeeded 201 | Failed 13 | Ingest lag 180ms            |
 +--------------------------------------------------------------------------+
-| (!) Fault active: delayed_inventory on inventory-service — expires 0:42  |
+| (!) Fault active: delayed_inventory on inventory-service - expires 0:42  |
 +--------------------------------------------------------------------------+
 | RECENT FAILURES                                                          |
 | +----------------------------------------------------------------------+ |
@@ -78,7 +78,7 @@ can actually prove. If telemetry is degraded, the user learns it before they tru
 
 ---
 
-## 3. Investigation — `/investigations/:id`
+## 3. Investigation - `/investigations/:id`
 
 The centrepiece. Four coordinated panels; selection is shared state across all of them.
 
@@ -109,20 +109,20 @@ The centrepiece. Four coordinated panels; selection is shared state across all o
 |        v                                     |                           |
 |   [payment.authorize ERROR]                  |                           |
 +----------------------------------------------+---------------------------+
-| EVIDENCE — selected edge: inventory.reserve#1 -> timeout.fired           |
+| EVIDENCE - selected edge: inventory.reserve#1 -> timeout.fired           |
 | Rule: rule.timeout.awaited@1            Class: PROVEN   Confidence: 1.00 |
 | Matched: awaited_correlation_id = evt_b1  ==  event_id = evt_b1          |
 +--------------------------------------------------------------------------+
 ```
 
-### Visual language for evidence class — non-negotiable
+### Visual language for evidence class - non-negotiable
 
 | Class | Edge rendering | Label |
 |---|---|---|
 | Proven | solid, 2px, full-opacity | `PROVEN` |
 | Derived | solid, 2px, dash-dot pattern | `DERIVED` |
 | Inferred | dashed, 1.5px, 60% opacity | `INFERRED` |
-| Weak | dotted, 1px, 30% opacity, **off by default** | `WEAK — not used in analysis` |
+| Weak | dotted, 1px, 30% opacity, **off by default** | `WEAK - not used in analysis` |
 
 Never colour-only: evidence class is encoded in **line style plus a text label**, so it
 survives colour blindness, greyscale printing and screenshots in a slide deck. Colour is
@@ -134,7 +134,7 @@ reserved for status (error red, anomaly amber, normal neutral).
 |---|---|
 | Width | proportional to `durationMs` (log scale, floor for point events) |
 | Border | red = ERROR/TIMEOUT, amber = anomalous, neutral = normal |
-| Badge `FRONTIER` | `anomaly.isFrontier` — the propagation origin |
+| Badge `FRONTIER` | `anomaly.isFrontier` - the propagation origin |
 | Badge `#2` | `attemptNumber > 1` |
 | Badge flask | `is_fault_injected`, **only when Reveal is on** |
 | Dashed container | cluster; shows member count, expandable |
@@ -171,26 +171,26 @@ legible at a glance, and no trace viewer draws it.
 
 **Reveal fault defaults to off and is labelled "Reveal injected fault (ground truth)".** The
 user should form a conclusion from the evidence before seeing the answer. That ordering is
-what makes a demo convincing — and it mirrors how the evaluation harness works.
+what makes a demo convincing - and it mirrors how the evaluation harness works.
 
 ### States
 
 | State | Presentation |
 |---|---|
 | `RUNNING` | Skeleton graph, progress via SSE (`/stream`), stage name shown |
-| `PROVISIONAL` | Amber banner: "Telemetry still arriving — results may change." Re-run button. |
+| `PROVISIONAL` | Amber banner: "Telemetry still arriving - results may change." Re-run button. |
 | `DEGRADED` | Red banner listing missing contract fields and counts, with a link to the contract doc |
 | `truncated` | Banner: "Subgraph truncated at 5000 nodes. Showing the 5000 nearest the failure." |
 | `frontierFallback` | Banner explaining that no clean frontier was found and what was used instead |
 | `FAILED` | Error with the stage that failed, and a retry button |
-| Empty candidates | "No candidate origin could be identified" plus the reasons from `caveats` — never a blank panel |
+| Empty candidates | "No candidate origin could be identified" plus the reasons from `caveats` - never a blank panel |
 
 Every degraded state has copy written in advance. Vague or absent empty states are where
 debugging tools lose credibility.
 
 ---
 
-## 4. Fault Lab — `/lab`
+## 4. Fault Lab - `/lab`
 
 **Purpose.** Reproduce a failure on demand. This closes the user journey loop and is the
 screen that makes the project feel alive in a demo.

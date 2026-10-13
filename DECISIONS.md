@@ -39,17 +39,17 @@ for the UI.
 
 **Rejected alternatives.**
 
-- **Go everywhere** — initially recommended: ~20 MB containers, explicit goroutine/`context`
+- **Go everywhere** - initially recommended: ~20 MB containers, explicit goroutine/`context`
   concurrency, a race detector. Rejected because learning it would consume ~20–25% of a 4–6
   week part-time budget, and that time is better spent on the causality engine, which is where
   the project's value is. Also, the code produced during the learning period would be
-  unidiomatic — the worst outcome for something meant to be shown.
-- **Java 21 + Spring Boot** — strongest option on one axis: the OTel auto-instrumentation agent
+  unidiomatic - the worst outcome for something meant to be shown.
+- **Java 21 + Spring Boot** - strongest option on one axis: the OTel auto-instrumentation agent
   produces realistic telemetry with no application code, which partly answers the "you
   instrumented exactly what your analyser needs" criticism. Rejected on footprint (4 JVMs plus
   Kafka, Postgres and the Collector approaches 8 GB), slow startup hurting the demo loop, and
   because Spring hides the distributed-systems mechanics the project exists to show.
-- **Java services + Go platform** — the best technical story; rejected as two toolchains and
+- **Java services + Go platform** - the best technical story; rejected as two toolchains and
   ~30–40% more effort against a tight budget.
 
 **Consequences.**
@@ -58,7 +58,7 @@ for the UI.
   safety across the **ingestion boundary**, which is the project's most important contract;
   fast iteration; small containers.
 - Negative: Node's single event loop makes CPU-bound graph work a real constraint. Mitigated
-  deliberately rather than hidden — it is the reason for the API/worker split
+  deliberately rather than hidden - it is the reason for the API/worker split
   ([0008](#adr-0008)) and for `setImmediate` yielding in traversal.
 - Negative: no race detector. Mitigated by explicit barrier-based concurrency tests.
 - Honest framing for interviews: *this project demonstrates distributed systems design; the
@@ -78,13 +78,13 @@ partitions, consumer groups, redelivery) is itself part of the failure story.
 
 **Rejected alternatives.**
 
-- **Apache Kafka in KRaft mode** — identical semantics and client code, heavier footprint. The
+- **Apache Kafka in KRaft mode** - identical semantics and client code, heavier footprint. The
   only advantage is the literal name; since the client code is byte-identical, the experience
   transfers either way.
-- **RabbitMQ** — easier DLQ and delayed-message plugins, but routing-centric. Rejected because
+- **RabbitMQ** - easier DLQ and delayed-message plugins, but routing-centric. Rejected because
   it loses the consumer-lag and offset model, and **lag is the observable signal** for the
   `slow_consumer` scenario.
-- **NATS JetStream** — lightest and cleanest, but the smallest ecosystem and the fewest
+- **NATS JetStream** - lightest and cleanest, but the smallest ecosystem and the fewest
   backpressure signals to observe.
 
 **Consequences.** Kafka-API semantics available at ~1/3 the RAM; migrating to Apache Kafka
@@ -107,15 +107,15 @@ a recursive CTE.
 
 **Rejected alternatives.**
 
-- **Neo4j alongside Postgres** — rejected for MVP: an extra container, a second query language,
+- **Neo4j alongside Postgres** - rejected for MVP: an extra container, a second query language,
   a second data model, and a synchronisation problem. At 2,000-node subgraphs a recursive CTE
   is expected to beat a network round-trip to a separate store. Critically, **this is a
-  prediction, not an assumption** — BM8 in [benchmarks/plan.md](docs/benchmarks/plan.md) is
+  prediction, not an assumption** - BM8 in [benchmarks/plan.md](docs/benchmarks/plan.md) is
   designed to test it, and if Neo4j wins this ADR gets revised with data.
-- **ClickHouse for events + Postgres for metadata** — the correct answer at real scale and what
+- **ClickHouse for events + Postgres for metadata** - the correct answer at real scale and what
   production observability backends do. Rejected as large complexity for no MVP-visible benefit.
   Named as the evolution path.
-- **Redis for the correlation index** — rejected: no measured cache need. Adding it without
+- **Redis for the correlation index** - rejected: no measured cache need. Adding it without
   measurement would be resume padding.
 
 **Consequences.** One container, one mental model, transactional consistency across events,
@@ -134,21 +134,21 @@ winning at MVP-scale subgraphs.
 **Context.** The node abstraction determines what the graph can express. Candidates: span,
 operation, business action, normalised event.
 
-**Decision.** A normalised event — one occurrence of one unit of work or one significant
+**Decision.** A normalised event - one occurrence of one unit of work or one significant
 observation, with an optional duration.
 
 **Rejected alternatives.**
 
-- **Span** — the natural choice given OTel, but cannot represent a message dwelling in a topic,
+- **Span** - the natural choice given OTel, but cannot represent a message dwelling in a topic,
   a fault injection, a watchdog firing, or an analysis-time cluster. It is also trace-scoped,
   and Causora's whole point is crossing trace boundaries.
-- **Operation (service + name)** — loses per-occurrence identity, which retries and duplicates
+- **Operation (service + name)** - loses per-occurrence identity, which retries and duplicates
   absolutely require. Attempt 1 and attempt 2 must be distinct nodes.
-- **Business action** — too coarse; one action contains the entire failure chain.
+- **Business action** - too coarse; one action contains the entire failure chain.
 
 **Consequences.** A span maps to one event with a duration; span events, error logs, fault
 records and synthesised clusters all map cleanly. Negative: the type carries both point-in-time
-and interval semantics, which is slightly impure — accepted, because two node types would
+and interval semantics, which is slightly impure - accepted, because two node types would
 double the graph model's complexity for no analytical gain.
 
 ---
@@ -164,15 +164,15 @@ attributes into the telemetry pipeline. No separate domain-event stream to Causo
 
 **Rejected alternatives.**
 
-- **A dedicated domain-event stream** — services publish structured causal events directly to
+- **A dedicated domain-event stream** - services publish structured causal events directly to
   Causora. Rejected: two telemetry paths to keep consistent, two failure modes, and services
   would need to know Causora exists.
-- **OTel baggage** — semantically close, but baggage is size-limited, propagates to every
+- **OTel baggage** - semantically close, but baggage is size-limited, propagates to every
   downstream span whether relevant or not, and is conventionally a user-defined bag. These
   fields are structural.
 
 **Consequences.** One pipeline, one failure mode. The telemetry stream remains **valid,
-portable OTLP** readable by Jaeger or Tempo, with Causora's additions as extra attributes —
+portable OTLP** readable by Jaeger or Tempo, with Causora's additions as extra attributes -
 so Causora is an additive consumer of standard telemetry, not a proprietary format. The
 contract becomes a concrete list of attribute names, which is exactly what makes the ablation
 experiment implementable as configuration.
@@ -185,21 +185,21 @@ experiment implementable as configuration.
 **Context.** Edges need a notion of strength. The tempting approach is a learned or calibrated
 confidence score.
 
-**Decision.** Four declared evidence classes — proven, derived, inferred, weak — with fixed
+**Decision.** Four declared evidence classes - proven, derived, inferred, weak - with fixed
 per-rule confidence weights. The UI renders **labels, never percentages**. Inferred edges are
 capped at `MAX_INFERRED_CONFIDENCE = 0.75` so no chain of inferences can outrank a proven chain.
 
 **Rejected alternatives.**
 
-- **Learned confidence from labelled scenario runs** — rejected. Thirty runs is nowhere near
+- **Learned confidence from labelled scenario runs** - rejected. Thirty runs is nowhere near
   enough data, and a learned score would destroy the honesty that is the project's entire
   position. It would also make the ablation study circular.
-- **A single scalar "causality score"** — rejected: it collapses *how we know* into *how much
+- **A single scalar "causality score"** - rejected: it collapses *how we know* into *how much
   we believe*, which are different questions. Collapsing them is exactly the failure mode
   Causora is positioned against.
 
 **Consequences.** Every edge can answer *how do you know this?* with a rule name and the
-matched field values. "87% likely" would be a fabrication; "Derived — same idempotency key,
+matched field values. "87% likely" would be a fabrication; "Derived - same idempotency key,
 overlapping intervals, distinct reservation ids" is true and more useful. Negative: declared
 weights are unvalidated priors, which is why the evaluation harness exists and why weights are
 not tuned until there is data.
@@ -218,14 +218,14 @@ not tuned until there is data.
 **Consequences / rationale.**
 
 1. It is how real deployments work: services should not know their backend's name.
-2. **Fan-out to Jaeger is free**, which enables the project's strongest demo beat — the same
+2. **Fan-out to Jaeger is free**, which enables the project's strongest demo beat - the same
    telemetry as a trace waterfall beside Causora's causal graph. Without the Collector this
    would need double-exporting from application code.
 3. Redaction lives in **one auditable place** rather than being a discipline repeated across
    three services.
 4. `memory_limiter` and batching protect Causora from the retry-storm telemetry burst the demo
    deliberately produces.
-5. `retry_on_failure` buffers when Causora is down — harmless precisely because ingestion is
+5. `retry_on_failure` buffers when Causora is down - harmless precisely because ingestion is
    idempotent on `event_id`. Two decisions that reinforce each other.
 
 Cost: one container, ~128 MB, and a config file. Clearly worth it.
@@ -233,7 +233,7 @@ Cost: one container, ~128 MB, and a config file. Clearly worth it.
 ---
 
 <a id="adr-0008"></a>
-## ADR-0008: Modular platform — one API plus one worker
+## ADR-0008: Modular platform - one API plus one worker
 
 > **Status (build):** Superseded in scope by ADR-0017: a single platform process. The reasoning about event-loop contention is still the reason to move analysis to a worker thread at larger scale.
 
@@ -251,7 +251,7 @@ debugging tool.
 **Why the API/worker split specifically is justified.** Graph traversal and ranking are
 CPU-bound, and Node has one event loop per process. Long synchronous analysis in the API
 process would stall ingestion and reads. **The boundary is drawn exactly where the runtime
-demands it** — which is the correct reason to split a process, and a better answer than
+demands it** - which is the correct reason to split a process, and a better answer than
 "microservices are good practice".
 
 **Consequences.** Module boundaries are enforced by directory structure and by communication
@@ -273,7 +273,7 @@ business op, idempotency, message, topic-offset, awaited, retry-of).
 
 **Rejected alternative.** Composite indexes directly on `events`. Rejected because **each new
 rule would need its own index and therefore a migration**. With the index table, adding a rule
-requires no schema change at all — which matters enormously for a 4–6 week build where the
+requires no schema change at all - which matters enormously for a 4–6 week build where the
 rule set is the part most likely to evolve.
 
 **Consequences.** Edge derivation is O(log n) per lookup. Negative: 3–8× write amplification,
@@ -295,7 +295,7 @@ derivation for all events in dirty operations (bounded batch). Safe because edge
 idempotent on `(from, to, type)`.
 
 **Rejected alternative.** Pending-edge resolution: record the missing `event_id` and resolve on
-its arrival. O(1) amortised and the right answer at scale — but more state, more edge cases,
+its arrival. O(1) amortised and the right answer at scale - but more state, more edge cases,
 and unnecessary at MVP volumes where a saga is tens of events.
 
 **Consequences.** ~60 lines of code; cost proportional to saga size, not total event count.
@@ -336,7 +336,7 @@ size.
 **Rejected alternative.** Kubernetes (kind/minikube/k3d). Rejected: it adds manifests,
 networking complexity, image-loading friction and a slower iteration loop, while teaching
 nothing about the problem Causora addresses. A k8s manifest set may be added in M15 as a
-packaging exercise — but it must never become the development environment.
+packaging exercise - but it must never become the development environment.
 
 **Consequences.** `docker compose up` is the quickstart, which directly serves the
 "actually runnable, reproducible" requirement. Negative: no demonstration of k8s skills, which
@@ -358,7 +358,7 @@ container and **zero new semantics**. An API gateway adds a hop with no failure 
 its own.
 
 **Consequences.** Smaller footprint, faster startup, less code to maintain. Payment is
-deliberately kept — not for its logic, but because it places the *symptom* three hops from the
+deliberately kept - not for its logic, but because it places the *symptom* three hops from the
 *cause*, which is the product's entire reason to exist.
 
 ---
@@ -373,13 +373,13 @@ Hit@3, MRR and graph completeness against it. **Ground truth is structurally pre
 reaching the analysis pipeline.**
 
 **Enforcement** (all three required):
-1. The ranker's input type omits `is_fault_injected` and `experiment_id` — leakage is a
+1. The ranker's input type omits `is_fault_injected` and `experiment_id` - leakage is a
    compile error.
 2. `FAULT_AFFECTED` edges are excluded from traversal unless `mode=ground_truth`.
 3. A unit test asserts ranking is byte-identical with and without the fault flags set.
 
 **Consequences.** This single decision converts the project from "I built a visualisation" into
-"I built an evaluated system and here are the numbers" — the largest single increase in the
+"I built an evaluated system and here are the numbers" - the largest single increase in the
 project's value, and the enabler of the ablation study. Negative: it constrains the design
 permanently; the integrity tests must never be relaxed for convenience.
 
@@ -404,9 +404,9 @@ independent sampling at rate p with probability ~p^k, so an 8-edge chain barely 
 generous sampling. Sampling at MVP would mean debugging the sampler instead of the engine.
 
 **Consequences.** Higher telemetry volume, which is irrelevant at demo scale. The interesting
-consequence is that this becomes a measurable research question — *at what sampling rate does
+consequence is that this becomes a measurable research question - *at what sampling rate does
 causal graph completeness collapse, and does error-biased tail sampling preserve
-diagnosability?* — specified in [research.md](docs/experiments/research.md) §3. The design
+diagnosability?* - specified in [research.md](docs/experiments/research.md) §3. The design
 decision came first; the experiment validates it.
 
 ---
@@ -418,14 +418,14 @@ decision came first; the experiment validates it.
 omitting the idempotency check.
 
 **Decision.** The Inventory Service implements a **real check-then-act race**: it reads
-`processed_messages`, does the (slow) work, then writes the idempotency record — all
+`processed_messages`, does the (slow) work, then writes the idempotency record - all
 non-transactionally. A control variant (`inventory_fix`) writes the record first, in the same
 transaction, relying on the unique constraint.
 
 **Rationale.** Omitting the check would be a contrived failure and would invite the fair
 criticism that the demo is staged. A non-transactional idempotency guard is one of the most
 common genuine correctness bugs in event-driven systems. Shipping the real bug means the
-project demonstrates understanding of *why* idempotency guards must be transactional — a
+project demonstrates understanding of *why* idempotency guards must be transactional - a
 stronger signal than any diagram.
 
 **Consequences.** The bug is prominently commented as intentional, with a reference to the
@@ -441,8 +441,8 @@ and it is available essentially for free.
 
 **Context.** The original blueprint (~82 h MVP, Redpanda + OTel Collector + Jaeger + Postgres +
 Compose) was re-scoped to a hard three-day deadline on a 16 GB laptop with no GPU. The thesis
-and the novel parts — the causal metadata contract, the evidence-classed edge model, the
-frontier-based ranking, the injector-as-ground-truth evaluation and the metadata ablation — are
+and the novel parts - the causal metadata contract, the evidence-classed edge model, the
+frontier-based ranking, the injector-as-ground-truth evaluation and the metadata ablation - are
 unchanged. Only the plumbing around them shrinks.
 
 **Decision.**
@@ -491,7 +491,7 @@ README "Scope" so no one assumes it exists.
 
 **Context.** Two analysis heuristics (self-time latency; attributing a caller's error to its callee) were
 added after S2/S3 failed, so the headline evaluation cannot show they generalise. Separately, event ids for
-consumers are deterministic (`consume:<message>:<group>`) so that a timeout can name an event before it runs —
+consumers are deterministic (`consume:<message>:<group>`) so that a timeout can name an event before it runs -
 a design that silently assumed one delivery per message.
 
 **Decision.**

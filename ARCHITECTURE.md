@@ -1,6 +1,6 @@
-# Causora — Architecture
+# Causora - Architecture
 
-> **Build status — blueprint document.** The system diagram and container inventory below describe the **blueprint**. What was built has no containers: one platform process, three service processes, a SQLite-backed bus and SQLite storage (see the README and [ADR-0017](DECISIONS.md#adr-0017)). The requirements, the causal model, the Definition of Done and the repository-structure intent still hold; [PROGRESS.md](PROGRESS.md) records each DoD item as verified, replaced or not done.
+> **Build status - blueprint document.** The system diagram and container inventory below describe the **blueprint**. What was built has no containers: one platform process, three service processes, a SQLite-backed bus and SQLite storage (see the README and [ADR-0017](DECISIONS.md#adr-0017)). The requirements, the causal model, the Definition of Done and the repository-structure intent still hold; [PROGRESS.md](PROGRESS.md) records each DoD item as verified, replaced or not done.
 
 Master architecture document. Audience: the engineer (or agent) implementing Causora.
 
@@ -10,15 +10,15 @@ Master architecture document. Audience: the engineer (or agent) implementing Cau
 
 Causora is a **causality-aware distributed debugging platform**. It ingests OpenTelemetry
 data from a deliberately fault-prone demo application, normalises it into a single event
-model, derives typed and evidence-scored causal edges between events, and — given a failure —
+model, derives typed and evidence-scored causal edges between events, and - given a failure -
 reconstructs the ancestor subgraph, detects known failure patterns, and ranks candidate
 origins with explicit evidence.
 
 The project has three deliverables:
 
-1. **An engineering artefact** — a runnable distributed system plus an analysis platform.
-2. **An evaluated system** — root-cause ranking measured against fault-injector ground truth.
-3. **An experiment** — an ablation showing how graph completeness and ranking accuracy
+1. **An engineering artefact** - a runnable distributed system plus an analysis platform.
+2. **An evaluated system** - root-cause ranking measured against fault-injector ground truth.
+3. **An experiment** - an ablation showing how graph completeness and ranking accuracy
    degrade as causal metadata is removed.
 
 Deliverable 3 is what distinguishes Causora from a dashboard.
@@ -26,7 +26,7 @@ Deliverable 3 is what distinguishes Causora from a dashboard.
 ### Core thesis
 
 Causality is propagated, not discovered. The hard engineering problem is not "guess what
-caused what" — it is:
+caused what" - it is:
 
 - defining a metadata contract that makes causality **provable**,
 - propagating it correctly across HTTP *and* message-broker boundaries,
@@ -54,7 +54,7 @@ Form a hypothesis. Try to reproduce it. Typically 30–90 minutes per incident.
 
 **What Causora does instead.** Presents the ancestor subgraph of the failure with every
 relationship typed and evidenced, the propagation frontier highlighted, retry and duplicate
-clusters collapsed, and a ranked candidate list — then lets the engineer re-run the exact
+clusters collapsed, and a ranked candidate list - then lets the engineer re-run the exact
 scenario to confirm.
 
 **Concrete scope boundary.** Causora answers *what chain of events led to this failure, and
@@ -198,7 +198,7 @@ inside two processes**, not six services. Reasons:
 The split that *is* justified is **API vs worker**, for one specific reason: graph traversal
 and ranking are CPU-bound, and Node has a single event loop per process. Long synchronous
 analysis in the API process would stall ingestion and reads. The boundary is drawn exactly
-where the runtime demands it — and that reasoning is itself a design talking point.
+where the runtime demands it - and that reasoning is itself a design talking point.
 
 Module boundaries inside each process are enforced by directory structure and by the rule
 that modules communicate through typed interfaces in `packages/contracts`, so any module
@@ -208,18 +208,18 @@ could later be extracted without redesign.
 
 ## 5. Reading order for the implementer
 
-1. [docs/architecture/demo-application.md](docs/architecture/demo-application.md) — the system under study and how it breaks
-2. [docs/algorithms/event-model.md](docs/algorithms/event-model.md) — **the causal metadata contract; read before writing any instrumentation**
-3. [docs/architecture/observability.md](docs/architecture/observability.md) — telemetry pipeline
-4. [docs/database/schema.md](docs/database/schema.md) — persistence
-5. [docs/architecture/platform.md](docs/architecture/platform.md) — platform internals
-6. [docs/algorithms/causal-graph.md](docs/algorithms/causal-graph.md) — node and edge model
-7. [docs/algorithms/causality-algorithm.md](docs/algorithms/causality-algorithm.md) — pipeline algorithm
-8. [docs/algorithms/failure-analysis.md](docs/algorithms/failure-analysis.md) — investigation algorithm
-9. [docs/experiments/fault-injection.md](docs/experiments/fault-injection.md) — scenarios and ground truth
-10. [docs/api/rest-api.md](docs/api/rest-api.md) — API surface
-11. [docs/frontend/product-design.md](docs/frontend/product-design.md) — screens and UX flow
-12. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — build order
+1. [docs/architecture/demo-application.md](docs/architecture/demo-application.md) - the system under study and how it breaks
+2. [docs/algorithms/event-model.md](docs/algorithms/event-model.md) - **the causal metadata contract; read before writing any instrumentation**
+3. [docs/architecture/observability.md](docs/architecture/observability.md) - telemetry pipeline
+4. [docs/database/schema.md](docs/database/schema.md) - persistence
+5. [docs/architecture/platform.md](docs/architecture/platform.md) - platform internals
+6. [docs/algorithms/causal-graph.md](docs/algorithms/causal-graph.md) - node and edge model
+7. [docs/algorithms/causality-algorithm.md](docs/algorithms/causality-algorithm.md) - pipeline algorithm
+8. [docs/algorithms/failure-analysis.md](docs/algorithms/failure-analysis.md) - investigation algorithm
+9. [docs/experiments/fault-injection.md](docs/experiments/fault-injection.md) - scenarios and ground truth
+10. [docs/api/rest-api.md](docs/api/rest-api.md) - API surface
+11. [docs/frontend/product-design.md](docs/frontend/product-design.md) - screens and UX flow
+12. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - build order
 
 Supporting: [docs/security.md](docs/security.md), [docs/scalability.md](docs/scalability.md),
 [docs/testing-strategy.md](docs/testing-strategy.md),
@@ -292,7 +292,7 @@ placeholder directories.
    duplicate-reservation → payment-failure chain, in at least 9 runs out of 10.
 4. The Causora UI lists that failure within 5 s of it occurring.
 5. Opening the investigation shows a causal graph whose proven edges match the expected
-   chain exactly, asserted by an automated E2E test — not by eye.
+   chain exactly, asserted by an automated E2E test - not by eye.
 6. Every edge in the graph exposes its type, evidence class, the rule that derived it, and
    the specific field values that matched.
 7. The top-ranked candidate is the injected fault's service and operation.

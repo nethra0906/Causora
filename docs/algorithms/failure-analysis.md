@@ -1,9 +1,9 @@
-# Failure Analysis — the investigation algorithm
+# Failure Analysis - the investigation algorithm
 
-> **Build status — blueprint document.** Implemented in `src/platform/analysis.ts`. Differences from this text: scope traversal is bounded in memory (not a recursive CTE); latency is **self-time** (duration minus child spans); a caller's error or timeout is **attributed to its callee** (`http.client.request` and `timeout.fired` carry no error signal of their own, and an error that bubbled up from a failing child is discounted); ranking lists frontier candidates first, then downstream effects; completeness has three states with explicit reasons; the ablation is evaluated on the same stored events.
+> **Build status - blueprint document.** Implemented in `src/platform/analysis.ts`. Differences from this text: scope traversal is bounded in memory (not a recursive CTE); latency is **self-time** (duration minus child spans); a caller's error or timeout is **attributed to its callee** (`http.client.request` and `timeout.fired` carry no error signal of their own, and an error that bubbled up from a failing child is discounted); ranking lists frontier candidates first, then downstream effects; completeness has three states with explicit reasons; the ablation is evaluated on the same stored events.
 
 Given a failure event, produce a ranked list of candidate origins with evidence. Eight
-stages. **Nothing here is machine learning and nothing here is causal inference** — it is a
+stages. **Nothing here is machine learning and nothing here is causal inference** - it is a
 declared, inspectable heuristic over a graph whose edges are mostly proven.
 
 ```
@@ -26,9 +26,9 @@ share an event loop with ingestion.
 
 ---
 
-## 1. Stage 1 — Scope
+## 1. Stage 1 - Scope
 
-Reverse-reachability from the failure over **traversable** edges (proven, derived, inferred —
+Reverse-reachability from the failure over **traversable** edges (proven, derived, inferred -
 never weak, never `FAULT_AFFECTED` unless `mode=ground_truth`).
 
 ```sql
@@ -58,7 +58,7 @@ Three things worth noting:
   closes a loop makes this query run until the connection dies. Tarjan collapse (see
   `causal-graph.md` §3.1) runs first, but the guard is kept as defence in depth.
 - **`path_confidence` is multiplicative**, so a long chain of inferences decays. Three
-  inferred hops at 0.75 give 0.42 — below a single proven chain, which is the intended
+  inferred hops at 0.75 give 0.42 - below a single proven chain, which is the intended
   ordering. `MIN_PATH_CONFIDENCE` prunes paths that have decayed into noise.
 - If the `LIMIT` is hit, `truncated = true` is recorded and surfaced.
 
@@ -68,17 +68,17 @@ milliseconds; the Neo4j comparison is a post-MVP benchmark, not an assumption.
 
 ---
 
-## 2. Stage 2 — Baseline attachment
+## 2. Stage 2 - Baseline attachment
 
 For each distinct `(service, operation)` in the subgraph, join `operation_baselines`.
 Nodes whose operation has `sample_count < MIN_BASELINE_SAMPLES` (default 20) are marked
-`baseline_unavailable` and **cannot be scored on latency** — they can still be candidates via
+`baseline_unavailable` and **cannot be scored on latency** - they can still be candidates via
 error status, but the evidence says "no baseline available". Scoring an operation against
 three samples would be a fabricated statistic.
 
 ---
 
-## 3. Stage 3 — Per-node anomaly score
+## 3. Stage 3 - Per-node anomaly score
 
 Five signals, each in [0,1], combined with declared weights.
 
@@ -123,7 +123,7 @@ receives `RankableEvent`, which structurally omits them. See `event-model.md` §
 
 ---
 
-## 4. Stage 4 — Frontier identification
+## 4. Stage 4 - Frontier identification
 
 This stage is what makes Causora find *origins* rather than *symptoms*.
 
@@ -142,14 +142,14 @@ Implementation: a single reverse topological pass over the already-materialised 
 memoising `has_anomalous_ancestor`. O(V + E). Must handle the collapsed-SCC supernodes, whose
 anomaly score is the **max** over members.
 
-Fallback: if `frontier` is empty (every anomalous node has an anomalous ancestor — possible
+Fallback: if `frontier` is empty (every anomalous node has an anomalous ancestor - possible
 with a cycle or a fully-degraded graph), fall back to the anomalous nodes of greatest depth
 and record `frontier_fallback: true` in the investigation. Never return an empty result
 without explaining why.
 
 ---
 
-## 5. Stage 5 — Pattern matching
+## 5. Stage 5 - Pattern matching
 
 Run the pattern library (`causality-algorithm.md` §6.3) over the subgraph. Each match yields:
 
@@ -166,13 +166,13 @@ PatternMatch { pattern: string, member_event_ids: string[], evidence: object, bo
 | `TIMEOUT_CASCADE` | 0.10 |
 | `ERROR_AMPLIFICATION` | 0.05 |
 
-Bonuses apply to the pattern's **causally earliest** member, not to all members — otherwise a
+Bonuses apply to the pattern's **causally earliest** member, not to all members - otherwise a
 retry storm would promote all 200 of its retries over the one slow operation that caused it.
 This detail matters and is easy to get wrong.
 
 ---
 
-## 6. Stage 6 — Ranking
+## 6. Stage 6 - Ranking
 
 ```
 score(candidate) =
@@ -209,7 +209,7 @@ shows the evidence. Every candidate is presented as a hypothesis with support.
 
 ---
 
-## 7. Stage 7 — Evidence assembly
+## 7. Stage 7 - Evidence assembly
 
 For each candidate, the evidence bundle is the product. The score is just the sort order.
 
@@ -243,13 +243,13 @@ CandidateEvidence {
 `caveats` is mandatory and must be rendered prominently. It is the mechanism by which the
 tool declines to overstate itself.
 
-`matched_fields` carries the **actual values** that matched — `causation_id =
+`matched_fields` carries the **actual values** that matched - `causation_id =
 7f3a9b...` on both sides. An engineer can verify the claim without trusting Causora. That
 verifiability is worth more than any score.
 
 ---
 
-## 8. Stage 8 — Confidence labelling
+## 8. Stage 8 - Confidence labelling
 
 A single qualitative label per candidate, derived from the evidence, never a percentage.
 
@@ -292,6 +292,6 @@ Investigation {
 make the ablation study a matter of comparing two records rather than re-deriving history.
 
 Investigations are **cached and immutable**. Re-running against newer telemetry creates a new
-investigation and links `supersedes`. The UI shows "newer telemetry is available — re-run"
+investigation and links `supersedes`. The UI shows "newer telemetry is available - re-run"
 rather than silently changing a result the engineer is reading. Mutating a conclusion under
 someone mid-debug is a usability failure.

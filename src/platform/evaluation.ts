@@ -1,5 +1,5 @@
 /**
- * Evaluation harness. Ground truth comes from the fault injector's record of what it broke — never
+ * Evaluation harness. Ground truth comes from the fault injector's record of what it broke - never
  * from the telemetry the ranker sees. For every recorded failure we replay the SAME stored events
  * through every rule set (the ablation) and ask: does the ranking name the injected service +
  * operation, and how much of the proven graph survived?
@@ -78,7 +78,7 @@ export interface RuleSetSummary {
   by_scenario: Record<string, { runs: number; hit1: number; hit3: number; mrr: number }>;
 }
 
-/** Observations for one held-out scenario — the raw material for checking pre-registered predictions. */
+/** Observations for one held-out scenario - the raw material for checking pre-registered predictions. */
 export interface HeldOutResult {
   scenario: string;
   title: string;

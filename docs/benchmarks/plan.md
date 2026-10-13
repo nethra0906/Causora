@@ -1,6 +1,6 @@
 # Benchmarking Plan
 
-> **Build status — blueprint document.** Only **BM1** (ingest throughput) and **BM2** (investigation latency vs subgraph size) were run, in-process; results with hardware, repetitions and percentiles are in [results.md](results.md). BM3–BM8 (per-rule cost, storage growth, concurrency, API read latency, CTE-vs-Neo4j) were cut. The rule below still holds: no number appears here that a run did not produce.
+> **Build status - blueprint document.** Only **BM1** (ingest throughput) and **BM2** (investigation latency vs subgraph size) were run, in-process; results with hardware, repetitions and percentiles are in [results.md](results.md). BM3–BM8 (per-rule cost, storage growth, concurrency, API read latency, CTE-vs-Neo4j) were cut. The rule below still holds: no number appears here that a run did not produce.
 
 > **No results appear in this document or anywhere in this repository until the
 > implementation phase produces them.** Every number below is a placeholder marked `TBD`.
@@ -53,7 +53,7 @@ bytes* is what makes the ablation a controlled experiment rather than two differ
 
 ## 3. Benchmarks
 
-### BM1 — Ingestion throughput
+### BM1 - Ingestion throughput
 
 *Question:* how many normalised events per second can one worker sustain before lag grows
 without bound?
@@ -70,10 +70,10 @@ without bound?
 | Worker CPU at the sustained rate | TBD |
 | Breaking rate (lag grows unbounded) | TBD |
 
-*Design budget: 2,000 events/s (N2). Expect to discover the real limit is elsewhere — most
+*Design budget: 2,000 events/s (N2). Expect to discover the real limit is elsewhere - most
 likely correlation-index writes rather than normalisation CPU. Either outcome is a finding.*
 
-### BM2 — Per-event pipeline latency
+### BM2 - Per-event pipeline latency
 
 *Question:* where does time go between ingest and edges being queryable?
 
@@ -86,7 +86,7 @@ Instrumented per stage from Causora's self-telemetry:
 | derive edges | TBD | TBD | TBD |
 | **ingest → edges queryable** | TBD | TBD | TBD |
 
-### BM3 — Edge derivation cost per rule
+### BM3 - Edge derivation cost per rule
 
 *Question:* which rules are expensive, and is the expense justified?
 
@@ -94,10 +94,10 @@ Per-rule invocation count, total time, mean time, edges emitted. Run with each r
 in turn to get its marginal cost.
 
 *This drives real decisions: if `rule.proximity` costs 30% of derivation time to produce edges
-that are excluded from analysis anyway, it should stay disabled by default — and the benchmark
+that are excluded from analysis anyway, it should stay disabled by default - and the benchmark
 will say so.*
 
-### BM4 — Investigation latency vs subgraph size
+### BM4 - Investigation latency vs subgraph size
 
 **The headline chart.** Subgraph node count on the x-axis, latency on the y-axis, with stages
 broken out.
@@ -110,11 +110,11 @@ broken out.
 | 2,000 | | | | | | |
 | 5,000 | | | | | | |
 
-*Design budget: p95 under 2 s at 2,000 nodes (N4). The interesting question is the shape — if
+*Design budget: p95 under 2 s at 2,000 nodes (N4). The interesting question is the shape - if
 total time grows superlinearly, the cause is almost certainly the CTE materialising, and that
 finding is what would justify the subgraph cache or the graph-database comparison.*
 
-### BM5 — Storage growth
+### BM5 - Storage growth
 
 | Metric | Result |
 |---|---|
@@ -127,21 +127,21 @@ finding is what would justify the subgraph cache or the graph-database compariso
 | Projected GB/day at 1,000 events/s | TBD |
 
 *Expected finding: `raw_telemetry` and `event_correlations` dominate, not `events`. If so,
-that quantifies the cost of the replay capability and of the index-table design — both
+that quantifies the cost of the replay capability and of the index-table design - both
 deliberate trade-offs that deserve a measured price tag.*
 
-### BM6 — Concurrent investigations
+### BM6 - Concurrent investigations
 
 Investigations in parallel: 1, 2, 4, 8. Reported: p95 latency per level, worker CPU, pool
-saturation, and — critically — **ingest lag during analysis**, which tests whether the
+saturation, and - critically - **ingest lag during analysis**, which tests whether the
 separate connection pools actually protect intake.
 
-### BM7 — API read latency
+### BM7 - API read latency
 
 p50/p95/p99 for `/overview`, `/operations/:id/events`, `/graph/operations/:id`,
 `/investigations/:id` at `D2` and `D4-100k`. Design budget: p95 under 300 ms (N5).
 
-### BM8 — Recursive CTE vs Neo4j · **post-MVP, optional**
+### BM8 - Recursive CTE vs Neo4j · **post-MVP, optional**
 
 *Question:* does a graph database actually beat Postgres for k-hop ancestor queries at this
 scale?
@@ -151,7 +151,7 @@ Same graph loaded into both; identical traversals at depths 3, 6, 12 over subgra
 in sync.
 
 *This is the honest way to justify [ADR-0003](../../DECISIONS.md#adr-0003). The
-prediction is that Postgres wins at these sizes and the crossover is far beyond MVP scale — but
+prediction is that Postgres wins at these sizes and the crossover is far beyond MVP scale - but
 it is a prediction, and the benchmark either supports it or corrects it. If Neo4j wins, the ADR
 gets a documented revision, which is a better outcome than a defended guess.*
 
@@ -161,7 +161,7 @@ gets a documented revision, which is a better outcome than a defended guess.*
 
 1. **A benchmark that does not change a decision is not worth running.** Each one above has a
    stated decision attached.
-2. **Report the limiting resource**, not just the number — CPU, disk, lock contention or pool
+2. **Report the limiting resource**, not just the number - CPU, disk, lock contention or pool
    saturation.
 3. **Never extrapolate beyond the measured range.** A 1M-event result does not license a claim
    about 1B.

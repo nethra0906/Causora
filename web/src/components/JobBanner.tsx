@@ -6,7 +6,7 @@ export function JobBanner({ job }: { job: Job | null }) {
   if (job.status === 'RUNNING') {
     return (
       <div className="banner running" role="status">
-        <span className="spinner" aria-hidden="true" /> Running <strong>{job.kind}</strong> · {secs}s — faults are cleared automatically when the run ends.
+        <span className="spinner" aria-hidden="true" /> Running <strong>{job.kind}</strong> · {secs}s - faults are cleared automatically when the run ends.
       </div>
     );
   }

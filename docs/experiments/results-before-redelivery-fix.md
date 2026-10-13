@@ -1,4 +1,4 @@
-# Evaluation results — BEFORE the redelivery event-id fix (snapshot, 2026-10-13)
+# Evaluation results - BEFORE the redelivery event-id fix (snapshot, 2026-10-13)
 
 > Snapshot of the first run that exercised the held-out scenarios, kept so the before/after of the P6 defect fix is reproducible. Superseded by `results.md`; not regenerated.
 
@@ -19,9 +19,9 @@
 | `ablation.tracing_only` | 0% | 0% | 0% | 0.00 ± 0.00 | 0% | 66% | 34% | 0% |
 | `ablation.tracing_only.no_inference` | 0% | 0% | 0% | 0.00 ± 0.00 | 0% | 44% | 0% | 0% |
 
-Hit@1 matches the injected service + operation. "First instance" additionally requires the top candidate to be the earliest occurrence (attempt 1, not its retry) — it is the stricter localisation claim. "Truth reachable" = the injected operation is in the ancestor subgraph of the failure at all. "Edge recall" = share of the full-contract graph’s edges (by endpoint pair) that the rule set still recovers.
+Hit@1 matches the injected service + operation. "First instance" additionally requires the top candidate to be the earliest occurrence (attempt 1, not its retry) - it is the stricter localisation claim. "Truth reachable" = the injected operation is in the ancestor subgraph of the failure at all. "Edge recall" = share of the full-contract graph’s edges (by endpoint pair) that the rule set still recovers.
 
-"Duplicate bug diagnosed" = the investigation reports `IDEMPOTENCY_FAILURE` (the non-atomic guard) for the S1 runs — what `idempotency_key` buys beyond localisation.
+"Duplicate bug diagnosed" = the investigation reports `IDEMPOTENCY_FAILURE` (the non-atomic guard) for the S1 runs - what `idempotency_key` buys beyond localisation.
 
 ## Per-scenario Hit@1
 
@@ -43,9 +43,9 @@ Hit@1 matches the injected service + operation. "First instance" additionally re
 
 ## Control
 
-- `inventory-fix`: 10/10 orders confirmed, 0 DUPLICATE_OF edges (expected 0 — the corrected guard removes exactly that edge).
+- `inventory-fix`: 10/10 orders confirmed, 0 DUPLICATE_OF edges (expected 0 - the corrected guard removes exactly that edge).
 
-## Held-out scenarios — pre-registered predictions vs. what happened
+## Held-out scenarios - pre-registered predictions vs. what happened
 
 Predictions were written **before** these scenarios were implemented ([held-out.md](held-out.md)); the analyser was frozen for them. Verdicts below are computed, not judged.
 
@@ -53,12 +53,12 @@ Predictions were written **before** these scenarios were implemented ([held-out.
 
 | Prediction | Verdict | Observed |
 |---|---|---|
-| P1 every run fails with RETRY_EXHAUSTED | ✔ confirmed | 10/10 reproduced; outcomes: FAILED/RETRY_EXHAUSTED ×10 |
-| P2 default Hit@1 = 100% | ✔ confirmed | Hit@1 100% · first-instance 100% · Hit@3 100% |
-| P3 label STRONG/SUPPORTED; TIMEOUT_CASCADE + RETRY_STORM detected | ✔ confirmed | labels: STRONG ×10; patterns: RETRY_STORM ×10, TIMEOUT_CASCADE ×10 |
-| P4 tracing-only Hit@1 = 0% | ✔ confirmed | 0% / 0% |
-| P5 without awaited_correlation_id Hit@1 = 0% | ✔ confirmed | 0% |
-| P6 redeliveries collide on one event id (defect), without changing Hit@1 | ✔ confirmed | mean 3.0 stored inventory.reserve events per run (9 = every delivery kept, 3 = one per message) |
+| P1 every run fails with RETRY_EXHAUSTED | confirmed | 10/10 reproduced; outcomes: FAILED/RETRY_EXHAUSTED ×10 |
+| P2 default Hit@1 = 100% | confirmed | Hit@1 100% · first-instance 100% · Hit@3 100% |
+| P3 label STRONG/SUPPORTED; TIMEOUT_CASCADE + RETRY_STORM detected | confirmed | labels: STRONG ×10; patterns: RETRY_STORM ×10, TIMEOUT_CASCADE ×10 |
+| P4 tracing-only Hit@1 = 0% | confirmed | 0% / 0% |
+| P5 without awaited_correlation_id Hit@1 = 0% | confirmed | 0% |
+| P6 redeliveries collide on one event id (defect), without changing Hit@1 | confirmed | mean 3.0 stored inventory.reserve events per run (9 = every delivery kept, 3 = one per message) |
 
 | Rule set | Hit@1 | Hit@3 | MRR | Origin reachable |
 |---|---|---|---|---|
@@ -75,9 +75,9 @@ Predictions were written **before** these scenarios were implemented ([held-out.
 
 | Prediction | Verdict | Observed |
 |---|---|---|
-| Q1 every run fails with INSUFFICIENT_STOCK | ✔ confirmed | 10/10 reproduced; outcomes: FAILED/INSUFFICIENT_STOCK ×10 |
-| Q2 default Hit@1 = 0%; top candidate is in the order service | ✘ refuted | Hit@1 0%; top: (no candidate) ×10 |
-| Q3 COMPLETE and the origin is connected — confidently connected, wrongly ranked | ✔ confirmed | completeness: COMPLETE ×10; origin in subgraph 100%; labels: (none) ×10 |
+| Q1 every run fails with INSUFFICIENT_STOCK | confirmed | 10/10 reproduced; outcomes: FAILED/INSUFFICIENT_STOCK ×10 |
+| Q2 default Hit@1 = 0%; top candidate is in the order service | refuted | Hit@1 0%; top: (no candidate) ×10 |
+| Q3 COMPLETE and the origin is connected - confidently connected, wrongly ranked | confirmed | completeness: COMPLETE ×10; origin in subgraph 100%; labels: (none) ×10 |
 
 | Rule set | Hit@1 | Hit@3 | MRR | Origin reachable |
 |---|---|---|---|---|

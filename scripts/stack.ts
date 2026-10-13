@@ -21,7 +21,7 @@ if (args.has('--fresh')) rmSync(dataDir, { recursive: true, force: true });
 if (!args.has('--web') && !existsSync('web/dist/index.html')) {
   console.log('Building the UI (first run only)…');
   const r = spawnSync(process.execPath, [VITE, 'build', '--config', 'web/vite.config.ts', '--logLevel', 'warn'], { stdio: 'inherit' });
-  if (r.status !== 0) console.error('UI build failed — the API still works; run `npm run build:web` to see why.');
+  if (r.status !== 0) console.error('UI build failed - the API still works; run `npm run build:web` to see why.');
 }
 
 const env = {

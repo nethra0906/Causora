@@ -136,7 +136,7 @@ export function Evaluation({ health }: { health: Health | undefined }) {
           <section aria-labelledby="ctl">
             <h2 id="ctl">Control</h2>
             {doc.controls.map((c) => (
-              <p key={c.scenario}><span className="mono">{c.scenario}</span>: {c.confirmed}/{c.runs} orders confirmed, <strong>{c.duplicate_edges}</strong> DUPLICATE_OF edges. Same fault as S1 with the corrected idempotency guard — the failure and exactly that one edge disappear.</p>
+              <p key={c.scenario}><span className="mono">{c.scenario}</span>: {c.confirmed}/{c.runs} orders confirmed, <strong>{c.duplicate_edges}</strong> DUPLICATE_OF edges. Same fault as S1 with the corrected idempotency guard - the failure and exactly that one edge disappear.</p>
             ))}
           </section>
 
@@ -157,8 +157,8 @@ export function Evaluation({ health }: { health: Health | undefined }) {
                         <td className="num">{h.reproduced}/{Object.values(h.observed_outcomes).reduce((a, b) => a + b, 0)}</td>
                         <Cell v={h.by_rule_set['default']?.hit1 ?? 0} />
                         <Cell v={h.by_rule_set['ablation.tracing_only.no_inference']?.hit1 ?? 0} />
-                        <td className="mono small">{Object.entries(h.default.top_candidates).map(([k, n]) => `${k} ×${n}`).join(', ') || '—'}</td>
-                        <td className="small">{Object.entries(h.default.completeness).map(([k, n]) => `${k} ×${n}`).join(', ') || '—'}</td>
+                        <td className="mono small">{Object.entries(h.default.top_candidates).map(([k, n]) => `${k} ×${n}`).join(', ') || '-'}</td>
+                        <td className="small">{Object.entries(h.default.completeness).map(([k, n]) => `${k} ×${n}`).join(', ') || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
